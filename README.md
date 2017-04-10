@@ -11,16 +11,11 @@ Sorting is a classical problem in computer science. The challenge with sorting t
 
 ## The Challenge
 
-The main source of the challenge will be managing memory access and bandwidth requirements and creating a way for the sorting algorithm to adapt quickly and easily to each machine's configuration. Sorting is a problem with low arithmetic intensity; thus, making intelligent design choices based on the architecture of the target machine (e.g. caches, hyperthreading, etc.) will be crucial to getting good performance.
-
-Coding in higher-level languages. Unlike C, the garbage-collected languages on the list will probably not expose as much low-level control over the machine to us. The challenge is: how can we make use of our 418 knowledge to coax these high-level languages into giving us good performance?
+The main source of the challenge will be managing memory access and bandwidth requirements and creating a way for the sorting algorithm to adapt quickly and easily to each machine's configuration. Sorting is a problem with low arithmetic intensity; thus, making intelligent design choices based on the architecture of the target machine (e.g. caches, hyperthreading, etc.) will be crucial to getting good performance. We will also be coding in higher-level languages which, unlike C, will probably not expose as much low-level control over the machine to us. We will need to make use of our 418 knowledge to coax these high-level languages into giving us good performance.
 
 ## Resources
 
-We will do initial testing on the 20 core unix machines and the Gates machines.
-Our “starter code” is the two reference implementations that Blelloch’s team provided. (We will need to modify the given C++ code or install gcc 4.9 in order to get it to run on the GHC machines though)
-There is substantial existing literature on parallel sorting algorithms; we will refer to those (todo: add some specific papers)
-Access to Xeon Phi machines (in addition to the four days’ worth of Aware access that Blelloch’s team will give us) is nice to have
+We will do initial testing on the 20 core unix machines and the Gates machines. Our “starter code” consists of the two reference implementations that Blelloch’s team provided. We will need to modify the given C++ code or install gcc 4.9 in order to get it to run on the GHC machines though. There is also substantial existing literature on parallel sorting algorithms. We will refer to those such as this paper on [Robust Massively Parallel Sorting](http://epubs.siam.org/doi/pdf/10.1137/1.9781611974768.7) We will need access to the Xeon Phi machines in addition to the four days’ worth of Aware access that Blelloch’s team will give us.
 
 ## Goals and Deliverables
 
@@ -46,9 +41,9 @@ Performance graphs
 
 ## Platform Choice
 
-Determined for us already by rules of the contest
+The platform has been already been determined for us by the rules of the contest, but we will choose a couple of the programming languages that we will use such as C++, Go, and possibly others depending on how well they are able to support SIMD instructions on Intel's chips.
 
-If we get to our stretch goal of doing it in CUDA.. the GPU is a good platform because sorting is bandwidth-intensive, something that a GPU provides.
+We may also try getting a version to work on CUDA as stated in our stretch goals because sorting is a bandwidth-intensive problem, and GPUs have much higher bandwidth currently compared to CPUs.
 
 ## Schedule
 
