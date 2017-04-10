@@ -1,37 +1,20 @@
-## Welcome to GitHub Pages
+# Fast Parallel Sort
+By: Matthew Lee (mkl1) and Kevin Zhang (klz1)
 
-You can use the [editor on GitHub](https://github.com/firephinx/mklz-fps/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
+## Summary
 
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+We are planning on competing in [15-210's Sorting Competition](http://www.cs.cmu.edu/~15210/sort.html) by Professor Guy Blelloch. In order to compete effectively, we are going to implement different parallel comparison-based sorts in a few languages and optimize for performance on the provided 72-core machine as well as run tests on a variety of other machine such as the unix machines, gates machines, latedays, and maybe the Xeon Phis.
 
-### Markdown
+## Background
 
-Markdown is a lightweight and easy-to-use syntax for styling your writing. It includes conventions for
+Sorting is a classical problem in computer science. The challenge with sorting these days is how to correctly optimize the performance of different sorting algorithms on increasingly parallel and distributed machines. This competition was staged by Professor Guy Blelloch and the rest of the 210 team to incentivize students to help work on this real-world problem by writing efficient parallel sorting algorithms in a variety of languages. 
 
-```markdown
-Syntax highlighted code block
+## The Challenge
 
-# Header 1
-## Header 2
-### Header 3
+## Resources
 
-- Bulleted
-- List
+## Goals and Deliverables
 
-1. Numbered
-2. List
+## Platform Choice
 
-**Bold** and _Italic_ and `Code` text
-
-[Link](url) and ![Image](src)
-```
-
-For more details see [GitHub Flavored Markdown](https://guides.github.com/features/mastering-markdown/).
-
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/firephinx/mklz-fps/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
-
-### Support or Contact
-
-Having trouble with Pages? Check out our [documentation](https://help.github.com/categories/github-pages-basics/) or [contact support](https://github.com/contact) and we’ll help you sort it out.
+## Schedule
