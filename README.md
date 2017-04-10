@@ -7,11 +7,12 @@ We are planning on competing in [15-210's Sorting Competition](http://www.cs.cmu
 
 ## Background
 
-Sorting is a classical problem in computer science. The challenge with sorting these days is how to correctly optimize the performance of different sorting algorithms on increasingly parallel and distributed machines. This competition was staged by Professor Guy Blelloch and the rest of the 210 team to incentivize students to help work on this real-world problem by writing efficient parallel sorting algorithms in a variety of languages, and especially garbage-collected languages. In addition, they would like to understand how their SML work-stealing scheduler holds up against highly optimized solutions from Carnegie Mellon students.
+Sorting is a classical problem in computer science. The challenge with sorting these days is correctly optimizing the performance of different sorting algorithms on increasingly parallel and distributed machines. This competition was staged by Professor Guy Blelloch and the rest of the 210 team to incentivize students to help work on this real-world problem by writing efficient parallel sorting algorithms in a variety of languages, and especially garbage-collected languages. In addition, they would like to test how their SML work-stealing scheduler holds up against highly optimized solutions from Carnegie Mellon students.
 
 ## The Challenge
 
-The main source of the challenge will be managing memory access and bandwidth requirements and creating a way for the sorting algorithm to adapt quickly and easily to each machine's configuration. Sorting is a problem with low arithmetic intensity; thus making intelligent design choices based on the architecture of the target machine (e.g. caches, hyperthreading, etc.) will be crucial to getting good performance.
+The main source of the challenge will be managing memory access and bandwidth requirements and creating a way for the sorting algorithm to adapt quickly and easily to each machine's configuration. Sorting is a problem with low arithmetic intensity; thus, making intelligent design choices based on the architecture of the target machine (e.g. caches, hyperthreading, etc.) will be crucial to getting good performance.
+
 Coding in higher-level languages. Unlike C, the garbage-collected languages on the list will probably not expose as much low-level control over the machine to us. The challenge is: how can we make use of our 418 knowledge to coax these high-level languages into giving us good performance?
 
 ## Resources
@@ -51,8 +52,10 @@ If we get to our stretch goal of doing it in CUDA.. the GPU is a good platform b
 
 ## Schedule
 
-| Tables        | Are           | Cool  |
-| ------------- |:-------------:| -----:|
-| col 3 is      | right-aligned | $1600 |
-| col 2 is      | centered      |   $12 |
-| zebra stripes | are neat      |    $1 |
+| Week            | Tasks         |
+| --------------- |:-------------:|
+| Apr 10 - Apr 16 | Review literature on parallel sorting algorithms <br/> Get the provided C++ code to compile and run on GHC machines <br/> Analyse the performance of the provided C++ code <br/> Choose at least 2 garbage-collected languages and get them working on the GHC machines (set up the environment so we are able to compile and run parallel code) <br/> |
+| Apr 17 - Apr 23 | centered      |
+| Apr 24 - Apr 30 | are neat      | 
+| Apr 31 - May 5  | |
+| May 6 - May 12  | |
