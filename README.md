@@ -23,7 +23,7 @@ We will do initial testing on the 20 core unix machines and the Gates machines.
 
 Our “starter code” consists of the two reference implementations that Blelloch’s team provided. We will need to modify the given C++ code or install gcc 4.9 in order to get it to run on the GHC machines though. 
 
-There is also substantial existing literature on parallel sorting algorithms. We will refer to those such as this paper on [Robust Massively Parallel Sorting](http://epubs.siam.org/doi/pdf/10.1137/1.9781611974768.7) 
+There is also substantial existing literature on parallel sorting algorithms. We will refer to those such as this paper on [Robust Massively Parallel Sorting](http://epubs.siam.org/doi/pdf/10.1137/1.9781611974768.7).
 
 We will need access to the Xeon Phi machines in addition to the four days’ worth of Aware access that Blelloch’s team will give us.
 
