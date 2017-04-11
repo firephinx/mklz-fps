@@ -28,28 +28,24 @@ We will need access to the Xeon Phi machines in addition to the four days’ wor
 ## Goals and Deliverables
 
 ### Plan to achieve
-Analyse performance of C++ solution that they provided - why does it perform the way it does? Has it approached theoretical peak performance, and if not, what is slowing it down?
-Implement semi-optimized parallel sorting algorithms in at least 2 garbage-collected languages (currently thinking Java, Haskell and Go) and analyse their performance
-This will give us a rough idea of how the various languages compare in terms of
-Raw performance
-How much control the languages provide the programmer over the low-level performance-determining details.
-
-Implement a highly optimized sorting algorithm on one chosen language
-This would constitute our main submission to the sorting contest
-The concrete goal is to make it run faster than their SML solution.
+* Analyse the performance of the C++ solution that they provided - why does it perform the way it does? Has it approached theoretical peak performance, and if not, what is slowing it down?
+* Implement a semi-optimized parallel sorting algorithms in at least 2 garbage-collected languages (currently thinking Java, Haskell and Go) and analyse their performance. This will give us a rough idea of how the various languages compare in terms of:
+  * Raw performance
+  * How much control the languages provide the programmer over the low-level performance-determining details.
+* Implement a highly optimized sorting algorithm on one chosen language. This would constitute our main submission to the sorting contest.
+* The concrete goal is to make it run faster than their SML solution.
 
 ### Hope to achieve
-Implement an automated way of searching the parameter space (autotuning)
-This will allow us to make good use of the 4 days we have on the Aware machine
-Highly optimize for more than one language
-Implement a parallel sort in CUDA too
+* Implement an automated way of searching the parameter space (autotuning). This will allow us to make good use of the 4 days we have on the Aware machine.
+* Highly optimize for more than one language.
+* Implement a parallel sort in CUDA too.
 
-### Will demonstrate
-Performance graphs
+### Planned Demo
+* Performance comparison graphs between our optimized code and the baseline on different machines.
 
 ## Platform Choice
 
-The platform has been already been determined for us by the rules of the contest, but we will choose a couple of the programming languages that we will use such as C++, Go, and possibly others depending on how well they are able to support SIMD instructions on Intel's chips.
+The platform has been already been determined for us by the rules of the contest, but we will choose a couple of the programming languages that we will use such as C++, Go, Java, Haskell, and possibly others depending on how well they are able to support SIMD instructions on Intel's chips.
 
 We may also try getting a version to work on CUDA as stated in our stretch goals because sorting is a bandwidth-intensive problem, and GPUs have much higher bandwidth currently compared to CPUs.
 
