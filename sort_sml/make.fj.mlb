@@ -1,0 +1,14 @@
+local
+   $(SML_LIB)/basis/basis.mlb
+   $(SML_LIB)/basis/unsafe.mlb
+   $(SML_LIB)/smlnj-lib/smlnj-lib.mlb
+   $(SML_LIB)/smlnj-lib/Util/array-sort-sig.sml
+   $(SML_LIB)/smlnj-lib/Util/array-qsort.sml
+
+   210lib/210lib.fj.mlb
+   ./hash.sml
+   ./quickSort.sml
+   ./sampleSort.sml
+in
+   ./sort.sml
+end

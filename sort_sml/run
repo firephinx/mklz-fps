@@ -1,0 +1,20 @@
+#!/bin/bash
+export PROCS=`nproc --all`
+export N=100000000
+export ROUNDS=10
+export ARGS="./run [-n size] [-r rounds] [-p threads]"
+while getopts ":n:p:r:" option
+do
+        case "${option}"
+        in
+          r) ROUNDS=$OPTARG;;
+          p) PROCS=$OPTARG;;
+          n) N=$OPTARG;;
+          \?) echo $ARGS >&2; exit 1;;
+          :)  echo $ARGS >&2; exit 1;;
+        esac
+done
+echo size=$N
+echo threads=$PROCS
+echo rounds=$ROUNDS
+./make.fj @MLton number-processors $PROCS -- -n $N -r $ROUNDS
