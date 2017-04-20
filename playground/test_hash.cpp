@@ -15,7 +15,11 @@ uint64_t hash64(uint64_t u )
 }
 
 int main(){
-  printf("%llu\n", hash64(0));
+  int i;
+  scanf("%d", &i);
+  printf("%llu\n", hash64((uint64_t)i));
+
+  printf("%lf\n", (double)hash64((uint64_t)i));
 
   return 0;
 }
