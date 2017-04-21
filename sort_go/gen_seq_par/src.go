@@ -5,6 +5,7 @@ import (
   "fmt"
   "strconv"
   "time"
+  "runtime"
 )
 
 const expected_args int = 2
@@ -95,6 +96,9 @@ func main() {
   elapsed := time.Since(time_begin)
 
   fmt.Printf("Time taken to generate: %s\n", elapsed)
+
+  fmt.Println(runtime.GOMAXPROCS(0))
+  fmt.Println(runtime.NumCPU())
 
   // fmt.Println(seq)
 }
