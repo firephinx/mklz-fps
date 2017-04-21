@@ -37,13 +37,15 @@ func updiv(x, y int) int {
   return (x + y - 1) / y
 }
 
-func fill(a []Pair, base int) {
+func fill(a []Pair, base int, c chan int) {
   fmt.Printf("Fill slice of length %d\n", len(a))
 
   for i := 0; i < len(a); i++ {
     a[i].x = float64(hash64(uint64(i + base)))
     a[i].y = float64(i + base)
   }
+
+  c <- base
 }
 
 func main() {
@@ -71,6 +73,8 @@ func main() {
 
   time_begin := time.Now()
 
+  ch := make(chan int)
+
   // Carve up the slice into sub-slices
   slice_len := updiv(n, n_threads)
   for i :=0; i < n_threads ; i++ {
@@ -79,7 +83,13 @@ func main() {
 
     // fmt.Printf("Thread %d: [%d,%d)\n", i, start, end)
 
-    fill(seq[start:end], start)
+    // Spawn thread!
+    go fill(seq[start:end], start, ch)
+  }
+
+  // Wait for all goroutines to finish
+  for i := 0; i < n_threads; i++ {
+    <- ch
   }
 
   elapsed := time.Since(time_begin)
