@@ -38,7 +38,14 @@ func updiv(x, y int) int {
   return (x + y - 1) / y
 }
 
+func timeTrack(start time.Time, name string) {
+    elapsed := time.Since(start)
+    fmt.Printf("%s took %s\n", name, elapsed)
+}
+
 func fill(a []Pair, base int, c chan int) {
+  defer timeTrack(time.Now(), "fill")
+ 
   fmt.Printf("Fill slice of length %d\n", len(a))
 
   for i := 0; i < len(a); i++ {
