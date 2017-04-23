@@ -7,6 +7,8 @@ import (
   "time"
   // "runtime"
   "sort"
+  "math"
+  "math/rand"
 )
 
 type Pair struct {
@@ -37,34 +39,28 @@ func updiv(x, y int) int {
   return (x + y - 1) / y
 }
 
-func read_cmdline_input(args []string) (int, int) {
-  const expected_args int = 2
-
-  if num_args := len(args) ; num_args != expected_args + 1 {
-    fmt.Printf("Usage: %s <n> <n_threads>\n", args[0])
-    os.Exit(1);
-  }
-
-  // How long a sequence to generate?
-  n, err := strconv.Atoi(args[1])
+func string_to_int(s string) int {
+  x, err := strconv.Atoi(s)
   if err != nil {
       fmt.Println(err)
       os.Exit(1)
   }
+  return x
+}
 
-  // How many threads (goroutines) to use?
-  n_threads, err := strconv.Atoi(args[2])
-  if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
+func read_cmdline_input(args []string) (int, int) {
+  const expected_args int = 2
+  if num_args := len(args) ; num_args != expected_args + 1 {
+    fmt.Printf("Usage: %s <n> <n_threads>\n", args[0])
+    os.Exit(1);
   }
-
-  return n, n_threads
+  return string_to_int(args[1]), string_to_int(args[2])
 }
 
 func fill(a []Pair, base int, c chan int) {
   for i := 0; i < len(a); i++ {
     a[i].x = float64(hash64(uint64(i + base)))
+    a[i].x = rand.Float64()*10
     a[i].y = float64(i + base)
   }
   c <- base
@@ -87,34 +83,72 @@ func generate_seq(seq []Pair, n_threads int) {
   close(ch)
 }
 
-func count_and_partition(in []Pair, out []Pair, bucket_starts []float64, ch chan []int, done chan bool) {
+type count_struct struct {
+  counts []int
+  which_bucket []int
+  in []Pair
+}
+
+func count(in []Pair, bucket_walls []float64, ch chan count_struct) {
   n := len(in)
   // The local per-bucket counts
-  counts := make([]int, len(bucket_starts))
-
+  counts := make([]int, len(bucket_walls) + 1)
+  
   // Which buckets the elements belong to
   which_bucket := make([]int, n)
 
   for i := 0; i<n;i++ {
-    which_bucket[i] = sort.SearchFloat64s(bucket_starts, in[i].x)
-    counts[which_bucket[i]]++
+    bidx := sort.SearchFloat64s(bucket_walls, in[i].x)
+    if bidx == len(bucket_walls) + 1 {
+      fmt.Println("Err")
+    }
+    which_bucket[i] = bidx
+
+    counts[which_bucket[i]] += 1
   }
 
   // Report the local bucket counts to the master
-  ch <- counts
+  ch <- count_struct{counts, which_bucket, in}
+}
 
-  // Wait for the master thread to update our array
-  <-done
+func partition(in []Pair, out []Pair, which_bucket []int, bucket_offsets []int, counts []int, done chan bool) {
+  n := len(in)
 
-  // Write the elements in our block to the big array according to which partition it's in
+  for i:=0;i<n;i++ {
+    bucket := which_bucket[i]
+    out[bucket_offsets[bucket] + counts[bucket]] = in[i]
+    counts[which_bucket[i]] += 1
+  }
 
+  done <- true
+}
+
+type ByX []Pair
+
+func (s ByX) Len() int {
+  return len(s)
+}
+
+func (s ByX) Swap(i, j int) {
+  s[i], s[j] = s[j], s[i]
+}
+
+func (s ByX) Less (i, j int) bool {
+  return s[i].x < s[j].x
+}
+
+func sequential_sort(seq []Pair, done chan bool) {
+  sort.Sort(ByX(seq))
+  done <- true
 }
 
 func sample_sort(input []Pair, output []Pair, n_threads int) {
+  time_begin := time.Now()
+
   n := len(input)
   n_buckets := n_threads
-  oversample_stride := 2
-  n_oversample := n_buckets * oversample_stride
+  oversample_stride := 4
+  n_oversample := n_buckets * oversample_stride - 1
 
   // Oversample the sequence (sequential)
   oversamples := make([]float64, n_oversample)
@@ -126,39 +160,145 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
   // Sort the oversamples
   sort.Sort(sort.Float64Slice(oversamples))
 
+  fmt.Printf("n_oversample: %v\n", n_oversample)
   // Get the actual bucket start points
-  bucket_starts := make([]float64, n_buckets)
-  for i:=0; i<n_buckets;i++ {
-    bucket_starts[i] = oversamples[i * oversample_stride]
+  bucket_walls := make([]float64, n_buckets-1)
+  for i:=0; i<n_buckets-1;i++ {
+    fmt.Printf("Sample at %v\n", (i+1) * oversample_stride - 1)
+    bucket_walls[i] = oversamples[(i+1) * oversample_stride - 1]
   }
 
-  fmt.Println(bucket_starts)
+  fmt.Println("Bucket walls")
+  for i:=0;i<len(bucket_walls);i++ {
+    fmt.Printf("%.3v ", bucket_walls[i])
+  }
+  fmt.Println()
+
+  sample_elapsed := time.Since(time_begin)  
+
+  time_begin_count := time.Now()
 
   // In parallel, count how many elements are in each bucket
-  count_channel := make(chan []int)
-  done_channel := make(chan int)
+  count_channel := make(chan count_struct)
+  done_channel := make(chan bool)
 
   n_blocks := n_threads
   bucket_counts := make([]int, n_buckets)
+  messages := make([]count_struct, n_blocks)
   block_len := updiv(n, n_threads)
   for i:=0; i<n_blocks; i++ {
     start := block_len * i
     end := min(start + block_len, n)
-    go count_and_partition(input[start:end], output, bucket_starts, count_channel, done_channel)
+    go count(input[start:end], bucket_walls, count_channel)
   }
   
-  // Coordinate so the partitioning goes smoothly..
+  // Compute, for each block, the intra-bucket start positions
   for i:=0; i<n_blocks; i++ {
-    local_count := <-count_channel
+    msg := <-count_channel
+    messages[i] = msg
     for j:=0; j<n_buckets; j++ {
-      bucket_counts[j] += local_count[j]
-      local_count[j] = bucket_counts[j] - local_count[j]
+      bucket_counts[j] += msg.counts[j]
+      msg.counts[j] = bucket_counts[j] - msg.counts[j]
     }
-    reply_channel <- true
+
   }
 
-  // Sort within each partition
+  fmt.Println("All blocks counted")
 
+  // Turn bucket counts into global bucket start positions
+  bucket_offsets := make([]int, n_buckets)
+  for i:=1;i<n_buckets;i++ {
+    bucket_offsets[i] = bucket_offsets[i-1] + bucket_counts[i-1]
+  }
+
+  count_elapsed := time.Since(time_begin_count)
+
+  fmt.Println("------Buckets------")
+  fmt.Printf("Offsets: ")
+  for i:=0;i<len(bucket_offsets);i++ {
+    fmt.Printf("%v ", bucket_offsets[i])
+  }
+  fmt.Println()
+  fmt.Printf("Counts: ")
+  for i:=0;i<len(bucket_counts);i++ {
+    fmt.Printf("%v ", bucket_counts[i])
+  }
+  fmt.Println()
+
+  total_counts := 0
+  for i:=0;i<len(bucket_counts);i++ {
+    total_counts += bucket_counts[i]
+  }
+
+  fmt.Printf("Total: %v\n", total_counts)
+
+  time_begin_partition := time.Now()
+
+  for i:=0;i<n_blocks;i++ {
+    msg := messages[i]
+    go partition(msg.in, output, msg.which_bucket, bucket_offsets, msg.counts, done_channel)
+  }
+
+  // Wait for partitioning to finish
+  for i:=0;i < n_blocks;i++ {
+    <- done_channel
+  }
+
+  partition_elapsed := time.Since(time_begin_partition)
+
+  // Confirm that the partitioning has taken place correctly
+  for i:=0;i<n_buckets;i++ {
+    start := 0.0
+    if i > 0 {
+      start = bucket_walls[i-1]
+    }
+    end := math.MaxFloat64
+    if i < n_buckets - 1 {
+      end = bucket_walls[i]
+    }
+
+    fmt.Printf("Bucket %d [%.3v %.3v]: ", i, start, end)
+
+    for j:=0;j<bucket_counts[i];j++ {
+
+      cur_elem := output[bucket_offsets[i] + j]
+
+      fmt.Printf("%.3v ", cur_elem.x)
+
+      if cur_elem.x < start || cur_elem.x > end {
+        fmt.Printf("Error!! %.3v not in [%.3v, %.3v]\n", cur_elem, start, end)
+      }
+    }
+    fmt.Println()
+
+  }
+
+  time_begin_sort := time.Now()
+
+  // Sort within each partition
+  for i:=0;i<n_buckets;i++ {
+    go sequential_sort(output[bucket_offsets[i]:bucket_offsets[i]+bucket_counts[i]], done_channel)
+  }
+
+  for i:=0;i<n_buckets;i++ {
+    <- done_channel
+  }
+
+  sort_elapsed := time.Since(time_begin_sort)
+
+  fmt.Printf("Out: ")
+  for i:=0;i<n;i++ {
+    fmt.Printf("%.3v ", output[i])
+  }
+  fmt.Println()
+
+  total_elapsed := time.Since(time_begin)
+
+  fmt.Println(sample_elapsed)
+  fmt.Println(count_elapsed)
+  fmt.Println(partition_elapsed)
+  fmt.Println(sort_elapsed)
+  fmt.Println(total_elapsed)
 }
 
 func main() {
@@ -175,6 +315,11 @@ func main() {
   elapsed := time.Since(time_begin)
 
   fmt.Printf("Time taken to generate: %s\n", elapsed)
+
+  for i:=0;i<len(input);i++ {
+    fmt.Printf("%.3v ", input[i].x)
+  }
+  fmt.Println()
 
   // Sort the sequence!
   sample_sort(input, output, n_threads)
