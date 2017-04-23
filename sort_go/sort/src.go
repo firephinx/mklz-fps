@@ -142,9 +142,53 @@ func sequential_sort(seq []Pair, done chan bool) {
   done <- true
 }
 
-func sample_sort(input []Pair, output []Pair, n_threads int) {
-  time_begin := time.Now()
+func verify_partition(bucket_walls []float64, bucket_offsets []int, bucket_counts []int, output []Pair) {
+  n_buckets := len(bucket_offsets)
+  for i:=0;i<n_buckets;i++ {
+    start := 0.0
+    if i > 0 {
+      start = bucket_walls[i-1]
+    }
+    end := math.MaxFloat64
+    if i < n_buckets - 1 {
+      end = bucket_walls[i]
+    }
 
+    for j:=0;j<bucket_counts[i];j++ {
+      cur_elem := output[bucket_offsets[i] + j]
+      // fmt.Printf("%.3v ", cur_elem.x)
+      if cur_elem.x < start || cur_elem.x > end {
+        fmt.Printf("Error!! %.3v not in [%.3v, %.3v]\n", cur_elem, start, end)
+      }
+    }
+    // fmt.Println()
+  }
+
+}
+
+func print_sequence(seq []Pair) {
+  for i:=0;i<len(seq);i++ {
+    fmt.Printf("%.3v ", seq[i].x)
+  }
+  fmt.Println()
+
+}
+
+func verify_sorted(seq []Pair){
+  for i:=0;i+1<len(seq);i++ {
+    if seq[i].x > seq[i+1].x {
+      fmt.Printf("Error! Sequence not sorted (%.3v > %.3v)\n", seq[i].x, seq[i+1].x)
+    }
+  }
+}
+
+func sample_sort(input []Pair, output []Pair, n_threads int) {
+  
+  //____________________________________________________________________________
+  //                                        Sample the data for partition points
+
+  time_begin := time.Now()
+  
   n := len(input)
   n_buckets := n_threads
   oversample_stride := 4
@@ -160,21 +204,16 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
   // Sort the oversamples
   sort.Sort(sort.Float64Slice(oversamples))
 
-  fmt.Printf("n_oversample: %v\n", n_oversample)
   // Get the actual bucket start points
   bucket_walls := make([]float64, n_buckets-1)
   for i:=0; i<n_buckets-1;i++ {
-    fmt.Printf("Sample at %v\n", (i+1) * oversample_stride - 1)
     bucket_walls[i] = oversamples[(i+1) * oversample_stride - 1]
   }
 
-  fmt.Println("Bucket walls")
-  for i:=0;i<len(bucket_walls);i++ {
-    fmt.Printf("%.3v ", bucket_walls[i])
-  }
-  fmt.Println()
-
   sample_elapsed := time.Since(time_begin)  
+
+  //____________________________________________________________________________
+  //                     Count, for each block, how many elems go in each bucket
 
   time_begin_count := time.Now()
 
@@ -203,8 +242,6 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
 
   }
 
-  fmt.Println("All blocks counted")
-
   // Turn bucket counts into global bucket start positions
   bucket_offsets := make([]int, n_buckets)
   for i:=1;i<n_buckets;i++ {
@@ -213,24 +250,8 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
 
   count_elapsed := time.Since(time_begin_count)
 
-  fmt.Println("------Buckets------")
-  fmt.Printf("Offsets: ")
-  for i:=0;i<len(bucket_offsets);i++ {
-    fmt.Printf("%v ", bucket_offsets[i])
-  }
-  fmt.Println()
-  fmt.Printf("Counts: ")
-  for i:=0;i<len(bucket_counts);i++ {
-    fmt.Printf("%v ", bucket_counts[i])
-  }
-  fmt.Println()
-
-  total_counts := 0
-  for i:=0;i<len(bucket_counts);i++ {
-    total_counts += bucket_counts[i]
-  }
-
-  fmt.Printf("Total: %v\n", total_counts)
+  //____________________________________________________________________________
+  //       Copy elements from the input into their correct buckets in the output
 
   time_begin_partition := time.Now()
 
@@ -247,31 +268,10 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
   partition_elapsed := time.Since(time_begin_partition)
 
   // Confirm that the partitioning has taken place correctly
-  for i:=0;i<n_buckets;i++ {
-    start := 0.0
-    if i > 0 {
-      start = bucket_walls[i-1]
-    }
-    end := math.MaxFloat64
-    if i < n_buckets - 1 {
-      end = bucket_walls[i]
-    }
+  verify_partition(bucket_walls, bucket_offsets, bucket_counts, output)
 
-    fmt.Printf("Bucket %d [%.3v %.3v]: ", i, start, end)
-
-    for j:=0;j<bucket_counts[i];j++ {
-
-      cur_elem := output[bucket_offsets[i] + j]
-
-      fmt.Printf("%.3v ", cur_elem.x)
-
-      if cur_elem.x < start || cur_elem.x > end {
-        fmt.Printf("Error!! %.3v not in [%.3v, %.3v]\n", cur_elem, start, end)
-      }
-    }
-    fmt.Println()
-
-  }
+  //____________________________________________________________________________
+  //                                                     Sort within each bucket
 
   time_begin_sort := time.Now()
 
@@ -286,19 +286,19 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
 
   sort_elapsed := time.Since(time_begin_sort)
 
-  fmt.Printf("Out: ")
-  for i:=0;i<n;i++ {
-    fmt.Printf("%.3v ", output[i])
-  }
-  fmt.Println()
+  // print_sequence(output)
+
+  verify_sorted(output)
 
   total_elapsed := time.Since(time_begin)
 
-  fmt.Println(sample_elapsed)
-  fmt.Println(count_elapsed)
-  fmt.Println(partition_elapsed)
-  fmt.Println(sort_elapsed)
-  fmt.Println(total_elapsed)
+  
+  fmt.Printf("Time taken to draw samples: %s\n", sample_elapsed)
+  fmt.Printf("Time taken to get bucket counts: %s\n", count_elapsed)
+  fmt.Printf("Time taken to partition data: %s\n", partition_elapsed)
+  fmt.Printf("Time taken to sort buckets: %s\n", sort_elapsed)
+  fmt.Println()
+  fmt.Printf("Total time for sample_sort: %s\n", total_elapsed)
 }
 
 func main() {
@@ -314,12 +314,9 @@ func main() {
   generate_seq(input, n_threads)
   elapsed := time.Since(time_begin)
 
-  fmt.Printf("Time taken to generate: %s\n", elapsed)
+  fmt.Printf("Time taken to generate input: %s\n", elapsed)
 
-  for i:=0;i<len(input);i++ {
-    fmt.Printf("%.3v ", input[i].x)
-  }
-  fmt.Println()
+  // print_sequence(input)
 
   // Sort the sequence!
   sample_sort(input, output, n_threads)
