@@ -268,7 +268,7 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
   partition_elapsed := time.Since(time_begin_partition)
 
   // Confirm that the partitioning has taken place correctly
-  verify_partition(bucket_walls, bucket_offsets, bucket_counts, output)
+  // verify_partition(bucket_walls, bucket_offsets, bucket_counts, output)
 
   //____________________________________________________________________________
   //                                                     Sort within each bucket
