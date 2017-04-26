@@ -5,15 +5,24 @@ import (
   "fmt"
   "strconv"
   "time"
-  // "runtime"
+  "runtime"
   "sort"
   "math"
-  "math/rand"
+  // "math/rand"
 )
 
 type Pair struct {
   x float64
   y float64
+}
+
+func round_to_cache_line(x int) int {
+  const line_size = 256
+  if extra := x % line_size; extra != 0 {
+    x = x - extra + line_size
+  }
+
+  return x
 }
 
 func hash64(u uint64) uint64 {
@@ -60,7 +69,7 @@ func read_cmdline_input(args []string) (int, int) {
 func fill(a []Pair, base int, c chan int) {
   for i := 0; i < len(a); i++ {
     a[i].x = float64(hash64(uint64(i + base)))
-    a[i].x = rand.Float64()*10
+    // a[i].x = rand.Float64()*10
     a[i].y = float64(i + base)
   }
   c <- base
@@ -71,16 +80,52 @@ func generate_seq(seq []Pair, n_threads int) {
   ch := make(chan int)
   // Carve up the slice into sub-slices
   slice_len := updiv(n, n_threads)
+  // slice_len = round_to_cache_line(slice_len)
   for i :=0; i < n_threads ; i++ {
     start := slice_len * i
     end := min(start + slice_len, n)
+
+    // fmt.Printf("Thread %d gets range [%d, %d)\n", i, start, end)
     go fill(seq[start:end], start, ch)
   }
   // Wait for all goroutines to finish
   for i := 0; i < n_threads; i++ {
     <- ch
   }
-  close(ch)
+  // close(ch)
+}
+
+func fill_interleave(a []Pair, base int) {
+  for i := 0; i < len(a); i++ {
+    a[i].x = float64(hash64(uint64(i + base)))
+    a[i].y = float64(i + base)
+  }
+}
+
+func worker(id, nthreads int, seq []Pair, c chan int) {
+  const line_size = 64
+  stride := nthreads * line_size
+
+  for i:=id*line_size;i<len(seq);i+=stride {
+    fill_interleave(seq[i:min(i+stride,len(seq))],i)
+  }
+
+  c <- id
+}
+
+func generate_seq_interleave(seq []Pair, n_threads int) {
+  ch := make(chan int)
+
+  // Spawn a static thread pool
+  for i:=0;i<n_threads;i++ {
+    go worker(i, n_threads, seq, ch)
+  }
+  
+  // Wait for all goroutines to finish
+  for i := 0; i < n_threads; i++ {
+    <- ch
+    // fmt.Printf("%v done\n", <- ch)
+  }
 }
 
 type count_struct struct {
@@ -302,22 +347,37 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
 }
 
 func main() {
-  // fmt.Printf("# of OS threads: %v\n", runtime.GOMAXPROCS(0))
+  fmt.Printf("# of OS threads: %v\n", runtime.GOMAXPROCS(0))
 
   n, n_threads := read_cmdline_input(os.Args)
 
-  input := make([]Pair, n)
-  output := make([]Pair, n)
+  input_a := make([]Pair, n)
+  input_b := make([]Pair, n)
+
+  // output := make([]Pair, n)
 
   // Fill in the sequence with the hash values
-  time_begin := time.Now()
-  generate_seq(input, n_threads)
-  elapsed := time.Since(time_begin)
+  time_begin_interleave := time.Now()
+  generate_seq_interleave(input_a, n_threads)
+  elapsed_interleave := time.Since(time_begin_interleave)
 
-  fmt.Printf("Time taken to generate input: %s\n", elapsed)
+  fmt.Printf("Time taken to generate input (Interleave): %s\n", elapsed_interleave)
+
+  time_begin_usual := time.Now()
+  generate_seq(input_b, n_threads)
+  elapsed_usual := time.Since(time_begin_usual)
+
+  fmt.Printf("Time taken to generate input (Usual): %s\n", elapsed_usual)
+
+  for i:=0;i<n;i++ {
+    if input_a[i] != input_b[i] {
+      fmt.Printf("Error!! %v != %v\n", input_a[i], input_b[i])
+    }
+  }
+
 
   // print_sequence(input)
 
   // Sort the sequence!
-  sample_sort(input, output, n_threads)
+  // sample_sort(input, output, n_threads)
 }
