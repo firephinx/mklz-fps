@@ -51,9 +51,15 @@ The platform has been already been determined for us by the rules of the contest
 
 We will be creating a C++ version with CUDA and/or ISPC as stated in our stretch goals because sorting is a bandwidth-intensive problem, and GPUs have much higher bandwidth currently compared to CPUs.
 
-## Project Checkpoint Progress
+## Project Checkpoint 
+
+### Progress
 
 So far, Matt has implemented a parallel Sample Sort algorithm in Go that sorts 100 million pairs in 1.9 seconds. Kevin is still working on the parallel sorting algorithm in Java and has tested the performance of the built in parallel sort algorithm. We have analyzed the performance of their C++ code on the unix machines and have cemented our focus on Go as our main submission into the parallel sorting competition. We will be submitting our Go implementation soon to Guy Blelloch in order to unlock access to the Aware machine and begin testing both implementations on the Aware machines. We have also created a sample graph below with the Go implementation compared to the C++ implementation to demonstrate our current performance.
+
+### Potential Issues
+
+We don't foresee any issues with completing the project. The only problem might be submitting 2 languages to the sorting competition because there are many projects due on the week of May 4th. However, we anticipate being able to complete all of our planned tasks by the class competition on May 12th.
 
 ## Schedule
 
