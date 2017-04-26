@@ -56,7 +56,7 @@ We may also try getting a version to work on CUDA as stated in our stretch goals
 | Week            | Tasks         |
 | --------------- | ------------- |
 | Apr 10 - Apr 16 | Review literature on parallel sorting algorithms <br/> Get the provided C++ code to compile and run on GHC machines <br/> Analyse the performance of the provided C++ code <br/> Choose at least 2 garbage-collected languages and get them working on the GHC machines (set up the environment so we are able to compile and run parallel code) |
-| Apr 17 - Apr 23 | Implement first attempt at parallel sorting in the garbage-collected languages of our choice <br/> Analyse initial results from the first attempt and choose a language to focus on for our main contest submission <br/> Instrument code, use profiling tools, etc. to obtain deeper insight into the performance of the code we wrote in the previous week <br/> Submit our progress so far to Guy Blelloch’s team in order to request access to Aware machine |
-| Apr 24 - Apr 30 | Do write-up for project checkpoint (due Apr 25) <br/> Focus on optimizing the parallel sort in the language of our choice <br/> Test and optimize on the Aware machine | 
+| Apr 17 - Apr 23 | Implement first attempt at parallel sorting in the garbage-collected languages of our choice <br/> Analyse initial results from the first attempt and choose a language to focus on for our main contest submission <br/> Instrument code, use profiling tools, etc. to obtain deeper insight into the performance of the code we wrote in the previous week |
+| Apr 24 - Apr 30 | Do write-up for project checkpoint (due Apr 25) <br/> Focus on optimizing the parallel sort in the language of our choice <br/> Submit our progress so far to Guy Blelloch’s team in order to request access to Aware machine <br/> Test and optimize on the Aware machine | 
 | Apr 31 - May 5  | Optimize more <br/> Submit to the 210 sorting competition (due May 4) |
-| May 6 - May 12  | Prepare for final presentation |
+| May 6 - May 12  | Write C++ sorting code with CUDA and/or ISPC <br/> Prepare for final presentation |
