@@ -1,83 +1,97 @@
 package sort_java;
+
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Collections;
+import java.util.Random;
+
 
 public class ParallelSort
 {
- /**
-  * Sorts the array using a merge sort algorithm
-  * @param array The array to be sorted
-  * @return The sorted array
-  */
- public static void sort(double[] array)
- {
-      if(array.length > 1)
-      {
-           int centre;
-           double[] left;
-           double[] right;
-           int arrayPointer = 0;
-           int leftPointer = 0;
-           int rightPointer = 0;
+   /**
+    * Sorts the array using a parallel sample sort algorithm
+    * @param array The array to be sorted
+    * @return The sorted array
+    */
+  public static void sort(double[][] array)
+  {
 
-           centre = (int)Math.floor((array.length) / 2.0);
+    int size = array.length/2;
+    int numProcessors = 40;
+    int oversample_rate = 100;
 
-           left = new double[centre];
-           right = new double[array.length - centre];
+    Random rand = new Random();
+    double[] samples = new double[numProcessors*oversample_rate];
 
-           System.arraycopy(array,0,left,0,left.length);
-           System.arraycopy(array,centre,right,0,right.length);
+    for(int i = 0; i < numProcessors * oversample_rate; i += 1)
+    {
+      int n = rand.nextInt(size);
+      samples[i] = array[n][0];
+    }
+    
+    Arrays.sort(samples);
 
-           sort(left);
-           sort(right);
+    double[] buckets = new double[numProcessors-1];
 
-           while((leftPointer < left.length) && (rightPointer < right.length))
-           {
-                if(left[leftPointer] <= right[rightPointer])
-                {
-                     array[arrayPointer] = left[leftPointer];
-                     leftPointer += 1;
-                }
-                else
-                {
-                     array[arrayPointer] = right[rightPointer];
-                     rightPointer += 1;
-                }
-                arrayPointer += 1;
-           }
-           if(leftPointer < left.length)
-           {
-                System.arraycopy(left,leftPointer,array,arrayPointer,array.length - arrayPointer);
-           }
-           else if(rightPointer < right.length)
-           {
-                System.arraycopy(right,rightPointer,array,arrayPointer,array.length - arrayPointer);
-           }
-      }
+    for(int i = 1; i < numProcessors; i += 1)
+    {
+      buckets[i-1] = samples[oversample_rate*i];
+      System.out.println("Bucket: " + buckets[i-1]);
+    }
+
+    //Arrays.sort(array, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
+    
+  }
+
+  public static int hash(int i)
+  {
+    long v = ((long) i) * 3935559000370003845L + 2691343689449507681L;
+    v = v ^ (v >> 21);
+    v = v ^ (v << 37);
+    v = v ^ (v >> 4);
+    v = v * 4768777513237032717L;
+    v = v ^ (v << 20);
+    v = v ^ (v >> 41);
+    v = v ^ (v <<  5);
+    return (int) (v & ((((long) 1) << 31) - 1));
+  }
+
+ // generates a pseudorandom double precision real from an integer
+ public static double generateReal(int i) {
+    return (double) hash(i);
  }
 
- public static void main(String args[])
- {
-      //Number of elements to sort
-      int size = 100000000;
+  public static void main(String args[])
+  {
+    //Number of elements to sort
+    int size = 100000000;
 
-      //Create the variables for timing
-      double start;
-      double end;
-      double duration;
+    //Create the variables for timing
+    double start_generation;
+    double end_generation;
+    double duration_generation;
+    double start_sort;
+    double end_sort;
+    double duration_sort;
 
-      Item[] items = Item.getItems(size);
-      //java.util.Collections.shuffle(items);
+    start_generation = System.nanoTime();
+    // Storing items into a 2D array
+    double[][] items = new double[size*2][2];
 
-      //Run performance test
-      start = System.nanoTime();
-      Arrays.parallelSort(items);
-      //sort(items);
-      end = System.nanoTime();
+    for(int i = 0; i < size; i+= 1) {
+      items[i][0] = generateReal(i);
+      items[i][1] = (double) i;
+    }
+    end_generation = System.nanoTime();
 
-      //Output performance results
-      duration = (end - start) / 1E9;
-      System.out.println("Duration: " + duration);
- }
+    //Run performance test
+    start_sort = System.nanoTime();
+    sort(items);
+    end_sort = System.nanoTime();
+
+    //Output performance results
+    duration_generation = (end_generation - start_generation) / 1E9;
+    duration_sort = (end_sort - start_sort) / 1E9;
+    System.out.println("Generation Duration: " + duration_generation);
+    System.out.println("Sort Duration: " + duration_sort);
+  }
 }
