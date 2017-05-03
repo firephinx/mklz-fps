@@ -34,6 +34,7 @@
 #include "sequence_ops.h"
 #include "quicksort.h"
 #include "transpose.h"
+#include "get_time.h"
 
 namespace pbbs {
 
@@ -75,6 +76,11 @@ namespace pbbs {
       quicksort(A, n, f);
       return A;
     } else {
+      timer bt;
+      timer ot;
+      ot.start();
+      bt.start();
+
       size_t bucket_quotient = 5;
       size_t block_quotient = 5;
       if (is_pointer(A[0])) {
@@ -92,6 +98,8 @@ namespace pbbs {
     
       E* sample_set = new_array<E>(sample_set_size);
 
+      printf("Sample!!\n");
+
       // generate "random" samples with oversampling
       parallel_for (size_t j=0; j< sample_set_size; ++j) 
 	sample_set[j] = A[hash64(j)%n];
@@ -107,18 +115,26 @@ namespace pbbs {
       delete_array(sample_set,sample_set_size);
       E *B = new_array_no_init<E>(n,0);
 
+      double time_sample = bt.stop();
+
+      bt.start();
+
       // sort each block and merge with samples to get counts for each bucket
       s_size_t *counts = new_array_no_init<s_size_t>(m,1);
       parallel_for_1 (size_t i = 0; i < num_blocks; ++i) {
 	size_t offset = i * block_size;
 	size_t size =  (i < num_blocks - 1) ? block_size : n - offset;
 
-	// copy to B to avoid overwriting the input
-	memcpy((char*) (B+offset), (char*) (A+offset), size*sizeof(E));
-	quicksort(B+offset, size, f);
-	merge_seq(B + offset, pivots, counts + i*num_buckets,
-		 size, num_buckets-1, f);
+
+  // copy to B to avoid overwriting the input
+  memcpy((char*) (B+offset), (char*) (A+offset), size*sizeof(E));
+  quicksort(B+offset, size, f);
+  merge_seq(B + offset, pivots, counts + i*num_buckets,
+     size, num_buckets-1, f);
       }
+
+      double time_count = bt.stop();
+      bt.start();
 
       // move data from blocks to buckets
       E *C = new_array_no_init<E>(n,1);
@@ -126,15 +142,32 @@ namespace pbbs {
 						   num_blocks, num_buckets);
       free(counts);
 
+      double time_partition = bt.stop();
+
+      bt.start();
+
       // sort within each bucket
       parallel_for_1 (size_t i = 0; i < num_buckets; ++i) {
 	size_t start = bucket_offsets[i];
 	size_t end = bucket_offsets[i+1];
 	quicksort(C+start, end - start, f);
       }
+
+      double time_sort = bt.stop();
+      printf("Function time: %.3lfs\n", ot.stop());
+      printf("Total time: %.3lfs\n", bt.get_total());
+
+      printf("Time taken to draw samples: %.3lfs\n", time_sample);
+      printf("Time taken to get bucket counts: %.3lfs\n", time_count);
+      printf("Time taken to partition data: %.3lfs\n", time_partition);
+      printf("Time taken to sort buckets: %.3lfs\n", time_sort);
+      printf("Time taken in total: %.3lfs\n", time_sample+time_count+time_partition+time_sort);
+
+
       delete_array(pivots,num_buckets-1);
       delete_array(B,n);
       free(bucket_offsets);
+
       return C;
     }
   }

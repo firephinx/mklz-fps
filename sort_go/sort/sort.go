@@ -5,7 +5,7 @@ import (
   "fmt"
   "strconv"
   "time"
-  "runtime"
+  // "runtime"
   "sort"
   "math"
   // "math/rand"
@@ -338,46 +338,39 @@ func sample_sort(input []Pair, output []Pair, n_threads int) {
   total_elapsed := time.Since(time_begin)
 
   
-  fmt.Printf("Time taken to draw samples: %s\n", sample_elapsed)
-  fmt.Printf("Time taken to get bucket counts: %s\n", count_elapsed)
-  fmt.Printf("Time taken to partition data: %s\n", partition_elapsed)
-  fmt.Printf("Time taken to sort buckets: %s\n", sort_elapsed)
+  // fmt.Printf("Time taken to draw samples: %s\n", sample_elapsed)
+  // fmt.Printf("Time taken to get bucket counts: %s\n", count_elapsed)
+  // fmt.Printf("Time taken to partition data: %s\n", partition_elapsed)
+  // fmt.Printf("Time taken to sort buckets: %s\n", sort_elapsed)
+  // fmt.Println()
+  // fmt.Printf("Total time for sample_sort: %s\n", total_elapsed)
+
+
+  fmt.Printf("%s\n", sample_elapsed)
+  fmt.Printf("%s\n", count_elapsed)
+  fmt.Printf("%s\n", partition_elapsed)
+  fmt.Printf("%s\n", sort_elapsed)
   fmt.Println()
-  fmt.Printf("Total time for sample_sort: %s\n", total_elapsed)
+  fmt.Printf("%s\n", total_elapsed)
 }
 
 func main() {
-  fmt.Printf("# of OS threads: %v\n", runtime.GOMAXPROCS(0))
+  // fmt.Printf("# of OS threads: %v\n", runtime.GOMAXPROCS(0))
 
   n, n_threads := read_cmdline_input(os.Args)
 
-  input_a := make([]Pair, n)
-  input_b := make([]Pair, n)
-
-  // output := make([]Pair, n)
-
-  // Fill in the sequence with the hash values
-  time_begin_interleave := time.Now()
-  generate_seq_interleave(input_a, n_threads)
-  elapsed_interleave := time.Since(time_begin_interleave)
-
-  fmt.Printf("Time taken to generate input (Interleave): %s\n", elapsed_interleave)
+  input := make([]Pair, n)
+  output := make([]Pair, n)
 
   time_begin_usual := time.Now()
-  generate_seq(input_b, n_threads)
+  generate_seq(input, n_threads)
   elapsed_usual := time.Since(time_begin_usual)
 
-  fmt.Printf("Time taken to generate input (Usual): %s\n", elapsed_usual)
-
-  for i:=0;i<n;i++ {
-    if input_a[i] != input_b[i] {
-      fmt.Printf("Error!! %v != %v\n", input_a[i], input_b[i])
-    }
-  }
-
+  // fmt.Printf("Time taken to generate input (Usual): %s\n", elapsed_usual)
+  fmt.Printf("%s\n", elapsed_usual)
 
   // print_sequence(input)
 
   // Sort the sequence!
-  // sample_sort(input, output, n_threads)
+  sample_sort(input, output, n_threads)
 }
