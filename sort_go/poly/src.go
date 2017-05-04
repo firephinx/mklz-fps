@@ -6,6 +6,10 @@ import (
   "time"
 )
 
+type ParamStruct struct {
+  n, threads, rounds int
+}
+
 func read_cmdline_input(args []string) (int, int, int) {
   const expected_args int = 3
   if num_args := len(args) ; num_args != expected_args + 1 {
@@ -15,15 +19,30 @@ func read_cmdline_input(args []string) (int, int, int) {
   return string_to_int(args[1]), string_to_int(args[2]), string_to_int(args[3])
 }
 
+func read_cmdline_input_struct(args []string) ParamStruct {
+  const expected_args int = 3
+  if num_args := len(args) ; num_args != expected_args + 1 {
+    fmt.Printf("Usage: %s <n> <threads> <rounds\n", args[0])
+    os.Exit(1);
+  }
+  return ParamStruct{
+    string_to_int(args[1]),
+    string_to_int(args[2]),
+    string_to_int(args[3])}
+}
+
 func main() {
 // Read cmdline input
-  n, threads, rounds := read_cmdline_input(os.Args)
+  ps := read_cmdline_input_struct(os.Args)  
+  n, threads, rounds := ps.n, ps.threads, ps.rounds
+  // n, threads, rounds := read_cmdline_input(os.Args)
   fmt.Printf("%d elements, %d threads, %d rounds\n", n, threads, rounds)
   if rounds == 0 { os.Exit(0) } // quit now if 0 rounds requested
 
-// Allocate input and output slices
+// Allocate slices
   output := make(ElementSlice, n)
   input := make(ElementSlice, n)
+  runtimes := make([]float64, rounds)
 
 // Generate input sequence
   time_generate := time.Now()
@@ -45,16 +64,16 @@ func main() {
   elapsed_generate := time.Since(time_generate)
   fmt.Printf("Generating input: %s\n", elapsed_generate)
 
-// Find best running time
-  runtimes := make([]float64, rounds)
-
 // Sort #rounds times
+  fmt.Println("\n===== Sorting begins =====")
+
   for r:=0;r<rounds;r++ {
     fmt.Printf("Round %v: ", r)
 
     // This is where our sort function should be called from!
     time_sort := time.Now()
-    sequential_sort_copy(input, output)
+    // sequential_sort_copy(input, output)
+    parallel_sample_sort(input, output, ps)
     elapsed_sort := time.Since(time_sort)
 
     // Do some simple book-keeping
@@ -63,6 +82,7 @@ func main() {
 
     // Verify that the output produced was correct
     verify(output)
+    fmt.Println()
   }
 
 // Print the best running-time

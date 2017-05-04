@@ -50,7 +50,8 @@ func verify(seq []Pair) bool {
     return false
   }
 
-  fmt.Println("Output sequence was verified :)")
+  // fmt.Println("Output sequence was verified :)")
+  fmt.Println("OK")
 
   return true
 }
