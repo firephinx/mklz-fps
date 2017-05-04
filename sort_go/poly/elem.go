@@ -1,7 +1,9 @@
 package main
 
-import "fmt"
-
+import (
+  "fmt"
+  "math"
+)
 type Pair struct {
   x float64
   y float64
@@ -18,6 +20,7 @@ func (a *Pair) Generate(i int) {
   a.y = float64(i)
 }
 
+// Pretty-print :)
 func (a Pair) Print() {
-  fmt.Printf("(%f, %.0f)\n", a.x, a.y)
+  fmt.Printf("(%.2f, %.0f)\n", math.Log10(a.x), a.y)
 }
