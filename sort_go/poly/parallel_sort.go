@@ -29,6 +29,8 @@ type count_struct struct {
 }
 
 func count(in []Pair, bucket_walls []float64, ch chan count_struct) {
+
+
   n := len(in)
   // The local per-bucket counts
   counts := make([]int, len(bucket_walls) + 1)
@@ -108,6 +110,8 @@ func old_sample_sort(input, output ElementSlice, ps ParamStruct) {
   bucket_counts := make([]int, n_buckets)
   messages := make([]count_struct, n_blocks)
   // block_len := updiv(n, n_threads)
+
+  fmt.Printf("nblocks: %v\n", n_blocks)
   for i:=0; i<n_blocks; i++ {
     // start := block_len * i
     // end := min(start + block_len, n)
