@@ -72,6 +72,7 @@ func main() {
     time_sort := time.Now()
     // sequential_sort_copy(input, output)
     parallel_sample_sort(input, output, ps)
+    old_sample_sort(input, output, ps)
     elapsed_sort := time.Since(time_sort)
 
     // Do some simple book-keeping
