@@ -14,51 +14,26 @@ public class ParallelSort
     * @param array The array to be sorted
     * @return The sorted array
     */
-  /*public static void sort(double[][] array)
-  {
-
-    int size = array.length/2;
-    int numProcessors = Runtime.getRuntime().availableProcessors();
-    int oversample_rate = 100;
-
-    Random rand = new Random();
-    double[] samples = new double[numProcessors*oversample_rate];
-
-    for(int i = 0; i < numProcessors * oversample_rate; i += 1)
-    {
-      int n = rand.nextInt(size);
-      samples[i] = array[n][0];
-    }
-    
-    Arrays.sort(samples);
-
-    double[] buckets = new double[numProcessors-1];
-
-    for(int i = 1; i < numProcessors; i += 1)
-    {
-      buckets[i-1] = samples[oversample_rate*i];
-      System.out.println("Bucket: " + buckets[i-1]);
-    }
-
-    Arrays.parallelSort(array, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
-    
-  }*/
 
   public static class sortBucketsCallable
         implements Callable {
     private int done;
 
     private int getBucket(Item[] buckets, Item item, int numProcessors) {
-      int bucketId;
-      if (item.getHash() > buckets[numProcessors-2].getHash()) {
+      int lo = 0;
+      int hi = numProcessors-2;
+
+      if (item.compareTo(buckets[numProcessors-2]) > 0) {
         return (numProcessors-1);
       } else {
-        for (bucketId = 0; bucketId < numProcessors-1; bucketId += 1) {
-          if (item.getHash() <= buckets[bucketId].getHash()){
-            break;
-          }
+        while (lo <= hi) {
+            // Key is in a[lo..hi] or not present.
+            int mid = lo + (hi - lo) / 2;
+            if      (item.compareTo(buckets[mid]) < 0) hi = mid - 1;
+            else if (item.compareTo(buckets[mid]) > 0) lo = mid + 1;
+            else return mid;
         }
-        return bucketId;
+        return lo;
       }
     }
 
@@ -125,7 +100,7 @@ public class ParallelSort
 
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
-    int oversample_rate = 100;
+    int oversample_rate = 1000;
 
     Random rand = new Random();
     Item[] samples = new Item[numProcessors*oversample_rate];
@@ -136,7 +111,7 @@ public class ParallelSort
       samples[i] = array[n];
     }
     
-    Arrays.sort(samples);
+    Arrays.parallelSort(samples);
 
     Item[] buckets = new Item[numProcessors-1];
 
