@@ -3,6 +3,8 @@ package sort_java;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
+import java.util.*;
+import java.util.concurrent.*;
 
 
 public class ParallelSort
@@ -41,7 +43,84 @@ public class ParallelSort
     Arrays.parallelSort(array, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
     
   }*/
-  public static void sort(Item[] array)
+
+  public static class sortBucketsCallable
+        implements Callable {
+    private int done;
+
+    private int getBucket(Item[] buckets, Item item, int numProcessors) {
+      int bucketId;
+      if (item.getHash() > buckets[numProcessors-2].getHash()) {
+        return (numProcessors-1);
+      } else {
+        for (bucketId = 0; bucketId < numProcessors-1; bucketId += 1) {
+          if (item.getHash() <= buckets[bucketId].getHash()){
+            break;
+          }
+        }
+        return bucketId;
+      }
+    }
+
+    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<List<Item>>> bucketLists, int numProcessors, int size, int id) {
+      int numCalculate = size/numProcessors;
+      int maxIdx = (id == (numProcessors-1)) ? size : (id+1)*numCalculate;
+
+      for (int i = id * numCalculate; i < maxIdx; i += 1)
+      {
+        int bucket = getBucket(buckets, array[i], numProcessors);
+        bucketLists.get(id).get(bucket).add(array[i]);
+      }
+      done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
+  public static class consolidateBucketsCallable
+        implements Callable {
+    private int done;
+
+    public consolidateBucketsCallable(List<List<List<Item>>> bucketLists, List<List<Item>> consolidatedBucketLists, int numProcessors, int id) {
+      for (int i = 0; i < numProcessors; i += 1) {
+        consolidatedBucketLists.get(id).addAll(bucketLists.get(i).get(id));
+      }
+      done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
+  public static class threadSortCallable
+        implements Callable {
+    private int done;
+
+    public threadSortCallable(List<List<Item>> consolidatedBucketLists, Item[] array, int numProcessors, int id) {
+      int size = consolidatedBucketLists.get(id).size();
+      int start = 0;
+
+      for (int i = 0; i < id; i += 1) {
+        start += consolidatedBucketLists.get(i).size();
+      }
+
+      Item[] newArray = consolidatedBucketLists.get(id).toArray(new Item[size]);
+
+      Arrays.sort(newArray);
+
+      for (int i = 0; i < size; i += 1)
+      {
+        array[start+i] = newArray[i];
+      }
+      done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
+  public static Item[] sort(Item[] array)
   {
 
     int size = array.length;
@@ -67,7 +146,91 @@ public class ParallelSort
       System.out.println("Bucket " + i + ": " + buckets[i-1].getHash());
     }
 
-    Arrays.parallelSort(array);
+    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
+    Set<Future<Integer>> set = new HashSet<Future<Integer>>();
+    List<List<List<Item>>> bucketLists = new ArrayList<List<List<Item>>>();
+
+    for (int i = 0; i < numProcessors; i += 1) {
+      List<List<Item>> bucketList = new ArrayList<List<Item>>();
+      for (int j = 0; j < numProcessors; j += 1) {
+        bucketList.add(new ArrayList<Item>());
+      }
+      bucketLists.add(bucketList);
+    }
+
+    for (int i = 0; i < numProcessors; i += 1)
+    {
+      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, numProcessors, size, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }
+
+    int sum = 0;
+    while(sum < numProcessors){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }
+
+    sum = 0;
+    set.clear();
+
+    List<List<Item>> consolidatedBucketLists = new ArrayList<List<Item>>();
+
+    for (int i = 0; i < numProcessors; i += 1) {
+      List<Item> bucketList = new ArrayList<Item>();
+      consolidatedBucketLists.add(bucketList);
+    }
+
+    for (int i = 0; i < numProcessors; i += 1)
+    {
+      Callable<Integer> callable = new consolidateBucketsCallable(bucketLists, consolidatedBucketLists, numProcessors, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }
+
+    while(sum < numProcessors){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }
+
+    sum = 0;
+    set.clear();
+
+    Item[] newArray = new Item[size];  
+
+    for (int i = 0; i < numProcessors; i += 1)
+    {
+      Callable<Integer> callable = new threadSortCallable(consolidatedBucketLists, newArray, numProcessors, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }
+
+    executor.shutdown();
+
+    while(sum < numProcessors){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }
+
+    return newArray;
     
   }
 
@@ -124,13 +287,13 @@ public class ParallelSort
         end_generation = System.nanoTime();
 
         start_sort = System.nanoTime();
-        sort(items);
+        Item[] newItems = sort(items);
         end_sort = System.nanoTime();
 
         start_check = System.nanoTime();
         for(int i = 1; i < size; i++){
-          if(items[i].getHash() < items[i-1].getHash()) {
-            System.out.println("Failed Correctness" + items[i-1].getHash() + " is before " + items[i].getHash());
+          if(newItems[i].getHash() < newItems[i-1].getHash()) {
+            System.out.println("Failed Correctness" + newItems[i-1].getHash() + " is before " + newItems[i].getHash());
           }
         }
         end_check = System.nanoTime();

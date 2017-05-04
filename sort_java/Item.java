@@ -1,4 +1,8 @@
 package sort_java;
+
+import java.util.*;
+import java.util.concurrent.*;
+
 public class Item implements Comparable<Item> {
 	private double hash;
 	private double data;	
@@ -33,12 +37,51 @@ public class Item implements Comparable<Item> {
 	public int compareTo(Item item) {
 		return Double.valueOf(hash).compareTo(item.getHash());
 	}
+
+	public static class getItemCallable
+        implements Callable {
+    private int done;
+    public getItemCallable(Item[] array, int numProcessors, int size, int id) {
+      int numCalculate = size/numProcessors;
+      int maxIdx = (id == (numProcessors-1)) ? size : (id+1)*numCalculate;
+
+      for (int i = id * numCalculate; i < maxIdx; i += 1)
+		  {
+		    array[i] = new Item(i);
+		  }
+		  done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
 	public static Item[] getItems(int size) {
-		Item[] Items = new Item[size];
-		for (int i = 0; i < size;i += 1)
-	    {
-	        Items[i] = new Item (i);
+		int numProcessors = Runtime.getRuntime().availableProcessors();
+		System.out.println("numProcessors = " + numProcessors);
+		ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
+		Item[] items = new Item[size];
+		Set<Future<Integer>> set = new HashSet<Future<Integer>>();
+    
+		for (int i = 0; i < numProcessors; i += 1)
+	  {
+	    Callable<Integer> callable = new getItemCallable(items, numProcessors, size, i);
+	    Future<Integer> future = executor.submit(callable);
+	    set.add(future);
+	  }
+	  executor.shutdown();
+
+	  int sum = 0;
+	  while(sum < numProcessors){
+	  	sum = 0;
+	  	for (Future<Integer> future : set) {
+	  		try{
+	  			sum += future.get();
+	  		} catch (Exception e) {
+				  break;
+				}
 	    }
-		return Items;
+	  }
+		return items;
 	}
 } 
