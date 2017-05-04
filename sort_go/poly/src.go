@@ -71,7 +71,7 @@ func main() {
     // This is where our sort function should be called from!
     time_sort := time.Now()
     // sequential_sort_copy(input, output)
-    parallel_sample_sort(input, output, ps)
+    // parallel_sample_sort(input, output, ps)
     old_sample_sort(input, output, ps)
     elapsed_sort := time.Since(time_sort)
 
