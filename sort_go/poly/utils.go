@@ -13,13 +13,16 @@ func min(x,y int) int {
   return y
 }
 
-func updiv(x, y int) int {
-  return (x + y - 1) / y
-}
-
-func block(seq ElementSlice, i, s int) ElementSlice {
+func block(seq ElementSlice, i, n_blocks int) (ElementSlice, int) {
   n := len(seq)
-  return seq[i*s : min((i+1)*s, n)]
+  stride := n / n_blocks
+  start := i * stride
+  end := start + stride
+  if i+1 == n_blocks {
+    end = n
+  }
+
+  return seq[start:end], start
 }
 
 func string_to_int(s string) int {

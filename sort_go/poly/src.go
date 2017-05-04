@@ -48,11 +48,9 @@ func main() {
   time_generate := time.Now()
   
   done := make(chan bool, threads)
-  stride := updiv(n, threads)
   for i:=0;i<threads;i++ {
     go func (i int) {
-      blk := block(input, i, stride)
-      base := i * stride
+      blk, base := block(input, i, threads)
       for j := range blk {
         blk[j].Generate(j + base)
       }
