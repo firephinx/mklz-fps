@@ -6,7 +6,7 @@ package main
 
 import "fmt"
 
-func verify_output_pairs(seq []Pair) bool {
+func verify(seq []Pair) bool {
   n := len(seq)
   if n == 0 {
     return true // Empty sequence is vacuously sorted

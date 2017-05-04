@@ -21,3 +21,10 @@ func sequential_sort(seq ElementSlice, done chan bool) {
   sort.Sort(seq)
   done <- true
 }
+
+func sequential_sort_copy(input, output ElementSlice) {
+  for i:=0;i<len(input);i++ {
+    output[i] = input[i]
+  }
+  sort.Sort(output)
+}
