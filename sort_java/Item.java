@@ -23,7 +23,7 @@ public class Item implements Comparable<Item> {
     public double generateReal(int i) {
         return (double) hash(i);
     }
-	public double gethash() {
+	public double getHash() {
 		return hash;
 	}
 	public double getData() {
@@ -31,7 +31,7 @@ public class Item implements Comparable<Item> {
 	}
 	@Override
 	public int compareTo(Item item) {
-		return Double.valueOf(hash).compareTo(item.gethash());
+		return Double.valueOf(hash).compareTo(item.getHash());
 	}
 	public static Item[] getItems(int size) {
 		Item[] Items = new Item[size];

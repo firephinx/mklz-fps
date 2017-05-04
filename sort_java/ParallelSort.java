@@ -12,11 +12,11 @@ public class ParallelSort
     * @param array The array to be sorted
     * @return The sorted array
     */
-  public static void sort(double[][] array)
+  /*public static void sort(double[][] array)
   {
 
     int size = array.length/2;
-    int numProcessors = 40;
+    int numProcessors = Runtime.getRuntime().availableProcessors();
     int oversample_rate = 100;
 
     Random rand = new Random();
@@ -38,7 +38,36 @@ public class ParallelSort
       System.out.println("Bucket: " + buckets[i-1]);
     }
 
-    //Arrays.sort(array, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
+    Arrays.parallelSort(array, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
+    
+  }*/
+  public static void sort(Item[] array)
+  {
+
+    int size = array.length;
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+    int oversample_rate = 100;
+
+    Random rand = new Random();
+    Item[] samples = new Item[numProcessors*oversample_rate];
+
+    for(int i = 0; i < numProcessors * oversample_rate; i += 1)
+    {
+      int n = rand.nextInt(size);
+      samples[i] = array[n];
+    }
+    
+    Arrays.sort(samples);
+
+    Item[] buckets = new Item[numProcessors-1];
+
+    for(int i = 1; i < numProcessors; i += 1)
+    {
+      buckets[i-1] = samples[oversample_rate*i];
+      System.out.println("Bucket " + i + ": " + buckets[i-1].getHash());
+    }
+
+    Arrays.parallelSort(array);
     
   }
 
@@ -75,12 +104,13 @@ public class ParallelSort
 
     start_generation = System.nanoTime();
     // Storing items into a 2D array
-    double[][] items = new double[size*2][2];
+    /*double[][] items = new double[size*2][2];
 
     for(int i = 0; i < size; i+= 1) {
       items[i][0] = generateReal(i);
       items[i][1] = (double) i;
-    }
+    }*/
+    Item[] items = Item.getItems(size);
     end_generation = System.nanoTime();
 
     //Run performance test
