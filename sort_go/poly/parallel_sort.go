@@ -37,7 +37,8 @@ func count(in []Pair, bucket_walls []float64, ch chan count_struct) {
   which_bucket := make([]int, n)
 
   for i := 0; i<n;i++ {
-    bidx := sort.SearchFloat64s(bucket_walls, in[i].x)
+    // bidx := sort.SearchFloat64s(bucket_walls, in[i].x)
+    bidx := i % (len(bucket_walls) + 1)
     if bidx == len(bucket_walls) + 1 {
       fmt.Println("Err")
     }
