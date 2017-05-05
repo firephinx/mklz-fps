@@ -229,8 +229,11 @@ public class ParallelSort
   {
     int version = 0;
     if (args.length > 0) {
-      if(args[0].equals("o")) {
+      if(args[0].equals("p")) {
         version = 1;
+      }
+      if(args[0].equals("s")) {
+        version = 2;
       }
     }
 
@@ -249,43 +252,46 @@ public class ParallelSort
     int size = 100000000;
     int numRuns = 5;
 
-    if(version == 0 || version == 1) {
-      start_generation = System.nanoTime();
-      Item[] items = Item.getItems(size);
-      end_generation = System.nanoTime();
+    start_generation = System.nanoTime();
+    Item[] items = Item.getItems(size);
+    end_generation = System.nanoTime();
 
-      duration_generation = (end_generation - start_generation) / 1E9;
-      System.out.println("Generation Duration: " + duration_generation);
+    duration_generation = (end_generation - start_generation) / 1E9;
+    System.out.println("Generation Duration: " + duration_generation);
 
-      for(int run = 0; run <= numRuns; run += 1)
-      {
-        Item[] sortedItems;
-        if (version == 1) {
-          start_sort = System.nanoTime();
-          sortedItems = Arrays.copyOf(items, size);
-          Arrays.parallelSort(sortedItems);
-          end_sort = System.nanoTime();
-        } else {
-          start_sort = System.nanoTime();
-          sortedItems = sort(items);
-          end_sort = System.nanoTime();
-        } 
+    for(int run = 0; run <= numRuns; run += 1)
+    {
+      Item[] sortedItems;
+      if (version == 1) {
+        start_sort = System.nanoTime();
+        sortedItems = Arrays.copyOf(items, size);
+        Arrays.parallelSort(sortedItems);
+        end_sort = System.nanoTime();
+      } else if (version == 2) {
+        start_sort = System.nanoTime();
+        sortedItems = Arrays.copyOf(items, size);
+        Arrays.sort(sortedItems);
+        end_sort = System.nanoTime();
+      } else {
+        start_sort = System.nanoTime();
+        sortedItems = sort(items);
+        end_sort = System.nanoTime();
+      } 
 
-        start_check = System.nanoTime();
-        for(int i = 1; i < size; i++){
-          if(sortedItems[i].compareTo(sortedItems[i-1]) < 0) {
-            System.out.println("Failed Correctness" + sortedItems[i-1].getHash() + " is before " + sortedItems[i].getHash());
-          }
+      start_check = System.nanoTime();
+      for(int i = 1; i < size; i++){
+        if(sortedItems[i].compareTo(sortedItems[i-1]) < 0) {
+          System.out.println("Failed Correctness" + sortedItems[i-1].getHash() + " is before " + sortedItems[i].getHash());
         }
-        end_check = System.nanoTime();
+      }
+      end_check = System.nanoTime();
 
-        //Output performance results
-        if(run > 0) {
-          duration_sort = (end_sort - start_sort) / 1E9;
-          duration_check = (end_check - start_check) / 1E9;
-          System.out.println("Sort Duration: " + duration_sort);
-          System.out.println("Check Duration: " + duration_check);
-        }
+      //Output performance results
+      if(run > 0) {
+        duration_sort = (end_sort - start_sort) / 1E9;
+        duration_check = (end_check - start_check) / 1E9;
+        System.out.println("Sort Duration: " + duration_sort);
+        System.out.println("Check Duration: " + duration_check);
       }
     }
   }
