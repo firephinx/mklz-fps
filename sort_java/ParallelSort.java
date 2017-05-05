@@ -98,7 +98,7 @@ public class ParallelSort
 
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
-    int numWork = numProcessors * 100;
+    int numWork = numProcessors * 30;
     int oversample_rate = 100;
 
     Random rand = new Random();
