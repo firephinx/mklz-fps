@@ -35,7 +35,7 @@ func read_cmdline_input_struct(args []string) ParamStruct {
     n,
     threads,
     rounds,
-    threads * 2, // # of buckets
+    threads, // # of buckets
     4,
     threads, // # of countblocks
   }
