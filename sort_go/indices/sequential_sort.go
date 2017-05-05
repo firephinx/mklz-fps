@@ -1,7 +1,9 @@
 package main
 
-import "sort"
-
+import (
+  "sort"
+  // "fmt"
+)
 func (s ElementSlice) Less (i, j int) bool {
   return (&s[i]).Less(&s[j])
 }
@@ -29,25 +31,59 @@ func sequential_sort_copy(input, output ElementSlice) {
 
 func sequential_sort_by_index(seq ElementSlice, done chan bool) {
   // The list to be sorted
-  n := len(seq)
+  n := int32(len(seq))
   idx := make([]int32, n)
-  for i:=0;i<n;i++ {
-    idx[i] = int32(i)
+  for i:=int32(0);i<n;i++ {
+    idx[i] = i
   }
+
+  // for i:=int32(0);i<n;i++ {
+  //   fmt.Printf("%v: ", i)
+  //   seq[i].Print()
+  // }
 
   // Sort indices by their elements
-  sort.Slice(idx, func(i, j int) bool { return (&seq[i]).Less(&seq[j]) })
+  sort.Slice(idx, func(i, j int) bool { return (&seq[idx[i]]).Less(&seq[idx[j]]) })
+  // sort.Slice(idx, func(i, j int) bool { return seq[i].x > seq[j].x })
+  // sort.Slice(idx, func(i, j int) bool { return i > j })
 
-  // Sort the bloody things. First pass: naive
+  // fmt.Println("Sorted")
 
-  tmp := make(ElementSlice, n)
+  // for _,x := range(idx) {
+  //   fmt.Printf("%v ", x)
+  //   seq[x].Print()
+  // }
+  // fmt.Println()
 
-  for i:=0;i<n;i++ {
-    tmp[i] = seq[idx[i]]
+  // First attempt: naive
+
+  // tmp := make(ElementSlice, n)
+
+  // for i:=int32(0);i<n;i++ {
+  //   tmp[i] = seq[idx[i]]
+  // }
+
+  // for i:=int32(0);i<n;i++ {
+  //   seq[i] = tmp[i]
+  // }
+
+  // Second pass: unravel the permutation
+
+  for i:=int32(0);i<n;i++ {
+    if idx[i] < n {
+      tmp := seq[i] // hold in our hand the current element
+
+      j := i
+      for idx[j] != i {
+        seq[j] = seq[idx[j]]
+        next := idx[j]
+        idx[j] = n
+        j = next
+      }
+      seq[j] = tmp
+      idx[j] = n
+    }
   }
 
-  for i:=0;i<n;i++ {
-    seq[i] = tmp[i]
-  }
   done <-true
 }
