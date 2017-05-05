@@ -47,7 +47,7 @@ func count_II(in ElementSlice, bucket_walls ElementSlice, ch chan count_struct_I
   ch <- count_struct_II{counts, which_bucket, in}
 }
 
-func partition_II(in, out ElementSlice, which_bucket []int, bucket_offsets []int, counts []int, done chan bool) {
+func partition(in, out ElementSlice, which_bucket []int, bucket_offsets []int, counts []int, done chan bool) {
   n := len(in)
 
   for i:=0;i<n;i++ {
@@ -71,7 +71,6 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
   n := len(in)
 
 // ========================================== Sample
-  fmt.Println("\nSampling")
 
   time_begin := time.Now()
 
@@ -95,9 +94,6 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
 
 // ========================================== Count
 
-  fmt.Println("Counting")
-
-
   time_begin_count := time.Now()
 
   // In parallel, count how many elements are in each bucket
@@ -106,36 +102,24 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
 
   bucket_counts := make([]int, n_buckets)
   messages := make([]count_struct_II, n_blocks)
-  // block_len := updiv(n, n_threads)
 
-  fmt.Println("Hi 1")
-
-  // fmt.Printf("nblocks: %v\n", n_blocks)
   for i:=0; i<n_blocks; i++ {
     // Matt: updated
     blk, _ := block(in, i, n_blocks)
     go count_II(blk, walls, count_channel)
   }
 
-  fmt.Println("Hi 2")
-
   
   // Compute, for each block, the intra-bucket start positions
   for i:=0; i<n_blocks; i++ {
-    fmt.Printf("cc %v\n", i)
     msg := <-count_channel
-    fmt.Printf("dd %v\n", i)
     messages[i] = msg
-    fmt.Printf("ee %v\n", i)
     for j:=0; j<n_buckets; j++ {
       bucket_counts[j] += msg.counts[j]
       msg.counts[j] = bucket_counts[j] - msg.counts[j]
     }
 
   }
-
-  fmt.Println("Hi 3")
-
 
   // Turn bucket counts into global bucket start positions
   bucket_offsets := make([]int, n_buckets)
@@ -144,14 +128,6 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
   }
 
   count_elapsed := time.Since(time_begin_count)
-
-
-
-  fmt.Println("Hi 4")
-
-
-
-
 
   //____________________________________________________________________________
   //       Copy elements from the input into their correct buckets in the output
@@ -170,10 +146,6 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
 
   partition_elapsed := time.Since(time_begin_partition)
 
-  // Confirm that the partitioning has taken place correctly
-  // verify_partition(bucket_walls, bucket_offsets, bucket_counts, output)
-
-
 
   //____________________________________________________________________________
   //                                                     Sort within each bucket
@@ -190,11 +162,7 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
   }
 
   sort_elapsed := time.Since(time_begin_sort)
-
   total_elapsed := time.Since(time_begin)
-
-
-
 
 
   fmt.Printf("Time taken to draw samples: %s\n", sample_elapsed)

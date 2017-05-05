@@ -72,15 +72,11 @@ func main() {
   elapsed_generate := time.Since(time_generate)
   fmt.Printf("Generating input: %s\n", elapsed_generate)
 
-  for _,x := range(input) {
-    x.Print()
-  }
-
 // Sort #rounds times
   fmt.Println("\n===== Sorting begins =====")
 
   for r:=0;r<rounds;r++ {
-    fmt.Printf("Round %v: ", r)
+    fmt.Printf("Round %v: \n", r)
 
     // This is where our sort function should be called from!
     time_sort := time.Now()
