@@ -31,13 +31,13 @@ func sequential_sort_copy(input, output ElementSlice) {
 
 func sequential_sort_by_index(seq ElementSlice, done chan bool) {
   // The list to be sorted
-  n := int16(len(seq))
-  idx := make([]int16, n)
-  for i:=int16(0);i<n;i++ {
+  n := int32(len(seq))
+  idx := make([]int32, n)
+  for i:=int32(0);i<n;i++ {
     idx[i] = i
   }
 
-  // for i:=int16(0);i<n;i++ {
+  // for i:=int32(0);i<n;i++ {
   //   fmt.Printf("%v: ", i)
   //   seq[i].Print()
   // }
@@ -59,17 +59,17 @@ func sequential_sort_by_index(seq ElementSlice, done chan bool) {
 
   // tmp := make(ElementSlice, n)
 
-  // for i:=int16(0);i<n;i++ {
+  // for i:=int32(0);i<n;i++ {
   //   tmp[i] = seq[idx[i]]
   // }
 
-  // for i:=int16(0);i<n;i++ {
+  // for i:=int32(0);i<n;i++ {
   //   seq[i] = tmp[i]
   // }
 
   // Second pass: unravel the permutation
 
-  for i:=int16(0);i<n;i++ {
+  for i:=int32(0);i<n;i++ {
     if idx[i] < n {
       tmp := seq[i] // hold in our hand the current element
 
