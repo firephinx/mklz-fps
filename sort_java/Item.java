@@ -58,7 +58,7 @@ public class Item implements Comparable<Item> {
 
 	public static Item[] getItems(int size) {
 		int numProcessors = Runtime.getRuntime().availableProcessors();
-		System.out.println("numProcessors = " + numProcessors);
+		//System.out.println("numProcessors = " + numProcessors);
 		ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
 		Item[] items = new Item[size];
 		Set<Future<Integer>> set = new HashSet<Future<Integer>>();
