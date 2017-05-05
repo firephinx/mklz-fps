@@ -6,6 +6,12 @@ import (
   "strconv"
 )
 
+func assert(id int, x bool) {
+  if x == false {
+    fmt.Printf("Assertion %v failed!\n", id)
+  }
+}
+
 func min(x,y int) int {
   if x < y {
     return x

@@ -6,72 +6,22 @@ import (
   "sort"
 )
 
-type count_struct_II struct {
-  counts []int
-  which_bucket []int
-  in ElementSlice
-}
-
-func count_II(in ElementSlice, bucket_walls ElementSlice, ch chan count_struct_II) {
-
-  n := len(in)
-  // The local per-bucket counts
-  counts := make([]int, len(bucket_walls) + 1)
-  
-  // Which buckets the elements belong to
-  which_bucket := make([]int, n)
-
-  for i := 0; i<n;i++ {
-    low := 0
-    high := len(bucket_walls)
-
-    for high - low > 1 {
-      mid := low + (high - low)/2
-      if (&bucket_walls[mid]).Less(&in[i]) {
-        low = mid
-      } else {
-        high = mid
-      }
-    }
-    bidx := low
-
-    if bidx == len(bucket_walls) + 1 {
-      fmt.Println("Err")
-    }
-    which_bucket[i] = bidx
-
-    counts[which_bucket[i]] += 1
-  }
-
-  // Report the local bucket counts to the master
-  ch <- count_struct_II{counts, which_bucket, in}
-}
-
-func partition_II(in, out ElementSlice, which_bucket []int, bucket_offsets []int, counts []int, done chan bool) {
-  n := len(in)
-
-  for i:=0;i<n;i++ {
-    bucket := which_bucket[i]
-    out[bucket_offsets[bucket] + counts[bucket]] = in[i]
-    counts[which_bucket[i]] += 1
-  }
-
-  done <- true
-}
-
 func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
+  done := make(chan bool)
 
   // Read parameters defined via cmd-line
   // threads := ps.threads
   n_buckets := ps.n_buckets
   oversample_stride := ps.oversample_stride
 
-  n_blocks := ps.n_countblocks
+  n_countblocks := ps.n_countblocks
 
   n := len(in)
 
+  which_bucket := make([]int, n)
+
 // ========================================== Sample
-  fmt.Println("\nSampling")
+  fmt.Println("Sampling")
 
   time_begin := time.Now()
 
@@ -91,118 +41,137 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
     walls[i] = oversamples[(i+1) * oversample_stride - 1]
   }
 
+  fmt.Println("Walls")
+  for _,x := range(walls) {
+    x.Print()
+  }
+
   sample_elapsed := time.Since(time_begin)  
 
 // ========================================== Count
-
   fmt.Println("Counting")
 
+  time_bucketcount := time.Now()
 
-  time_begin_count := time.Now()
+  // Allocate enough memory to store n_countblocks * n_buckets of counts
+  count := make([]int, n_buckets * n_countblocks + 1)
 
-  // In parallel, count how many elements are in each bucket
-  count_channel := make(chan count_struct_II)
-  done_channel := make(chan bool)
+  // Compute per-bucket per-block element counts
+  for i:=0;i<n_countblocks;i++ {
+    go func (i int) {
+      blk, base := block(in, i, n_countblocks)
+      for j := range blk {
+        // Find the bucket this element belongs to via binary search
+        low, high := 0, len(walls)
 
-  bucket_counts := make([]int, n_buckets)
-  messages := make([]count_struct_II, n_blocks)
-  // block_len := updiv(n, n_threads)
+        for high - low > 1 {
+          // fmt.Printf("Low-High: (%d, %d)\n", low, high)
 
-  fmt.Println("Hi 1")
+          mid := low + (high - low) / 2
+          if (&walls[mid]).Less(&blk[j]) {
+            low = mid
+          } else{
+            high = mid
+          }
+        }
+        // fmt.Printf("Low-High: (%d, %d)\n", low, high)
 
-  // fmt.Printf("nblocks: %v\n", n_blocks)
-  for i:=0; i<n_blocks; i++ {
-    // Matt: updated
-    blk, _ := block(in, i, n_blocks)
-    go count_II(blk, walls, count_channel)
+        bucket_id := low
+        assert(2, 0 <= bucket_id)
+        assert(3, bucket_id < n_buckets)
+
+        which_bucket[base + j] = bucket_id
+        fmt.Printf("Bucket id: %v\n", bucket_id)
+        count[i * n_buckets + bucket_id] += 1
+      }
+      done <- true
+    }(i)
   }
+  barrier(done, n_countblocks)
 
-  fmt.Println("Hi 2")
+  bucket_starts := make([]int, n_buckets + 1)
 
-  
-  // Compute, for each block, the intra-bucket start positions
-  for i:=0; i<n_blocks; i++ {
-    fmt.Printf("cc %v\n", i)
-    msg := <-count_channel
-    fmt.Printf("dd %v\n", i)
-    messages[i] = msg
-    fmt.Printf("ee %v\n", i)
-    for j:=0; j<n_buckets; j++ {
-      bucket_counts[j] += msg.counts[j]
-      msg.counts[j] = bucket_counts[j] - msg.counts[j]
+  fmt.Println("Printing raw counts")
+
+  for i:=0;i<n_countblocks;i++ {
+    for j:=0;j<n_buckets;j++ {
+      fmt.Printf("%v ", count[i * n_buckets + j])
     }
-
+    fmt.Println()
   }
 
-  fmt.Println("Hi 3")
+  fmt.Println("Computing offsets")
 
-
-  // Turn bucket counts into global bucket start positions
-  bucket_offsets := make([]int, n_buckets)
-  for i:=1;i<n_buckets;i++ {
-    bucket_offsets[i] = bucket_offsets[i-1] + bucket_counts[i-1]
+  // Turn counts into offsets
+  running_sum := 0
+  for j:=0;j<n_buckets;j++ {
+    bucket_starts[j] = running_sum
+    for i:=0;i<n_countblocks;i++ {
+      tmp := count[i * n_buckets + j]
+      count[i * n_buckets + j] = running_sum
+      running_sum += tmp
+    }
   }
 
-  count_elapsed := time.Since(time_begin_count)
-
-
-
-  fmt.Println("Hi 4")
-
-
-
-
-
-  //____________________________________________________________________________
-  //       Copy elements from the input into their correct buckets in the output
-
-  time_begin_partition := time.Now()
-
-  for i:=0;i<n_blocks;i++ {
-    msg := messages[i]
-    go partition(msg.in, out, msg.which_bucket, bucket_offsets, msg.counts, done_channel)
+  for i:=0;i<n_countblocks;i++ {
+    for j:=0;j<n_buckets;j++ {
+      fmt.Printf("%v ", count[i * n_buckets + j])
+    }
+    fmt.Println()
   }
 
-  // Wait for partitioning to finish
-  for i:=0;i < n_blocks;i++ {
-    <- done_channel
+  bucket_starts[n_buckets] = running_sum
+  if running_sum != n {
+    fmt.Println("ERROR!! running_sum not n\n")
   }
 
-  partition_elapsed := time.Since(time_begin_partition)
+  // Scatter the input elements to their partitions
+  fmt.Println("Scattering")
 
-  // Confirm that the partitioning has taken place correctly
-  // verify_partition(bucket_walls, bucket_offsets, bucket_counts, output)
+  for i:=0;i<n_countblocks;i++ {
+    go func (i int) {
+      blk, base := block(in, i, n_countblocks)
+      for j := range blk {
+        // Find the bucket this element belongs to via binary search
+
+        bucket_id := which_bucket[base + j]
+        fmt.Printf("Bucket id: %d\n", bucket_id)
+
+        assert(1, 0 <= bucket_id && bucket_id < n_buckets)
+
+        offset := count[i * n_buckets + bucket_id]
+
+        assert(4, i * n_buckets + bucket_id >= 0)
+        assert(5, i * n_buckets + bucket_id < n_buckets * n_countblocks)
+
+        count[i * n_buckets + bucket_id] += 1
+
+        assert(6, 0 <= offset)
+        assert(7, offset < n)
+        if offset >= n {
+          fmt.Printf("Offset %v\n", offset)
+        }
+        out[offset] = blk[j]
+      }
+      done <- true
+    }(i)
+  }
+  barrier(done, n_countblocks)
 
 
 
-  //____________________________________________________________________________
-  //                                                     Sort within each bucket
-
-  time_begin_sort := time.Now()
-
-  // Sort within each partition
+  fmt.Println("Verifying")
+  // Do a quick verification
   for i:=0;i<n_buckets;i++ {
-    go sequential_sort(out[bucket_offsets[i]:bucket_offsets[i]+bucket_counts[i]], done_channel)
+    fmt.Printf("%d ", bucket_starts[i])
   }
-
-  for i:=0;i<n_buckets;i++ {
-    <- done_channel
-  }
-
-  sort_elapsed := time.Since(time_begin_sort)
-
-  total_elapsed := time.Since(time_begin)
+  fmt.Println()
 
 
-
-
+  bucketcount_elapsed := time.Since(time_bucketcount)
 
   fmt.Printf("Time taken to draw samples: %s\n", sample_elapsed)
-  fmt.Printf("Time taken to count: %s\n", count_elapsed)
-  fmt.Printf("Time taken to partition data: %s\n", partition_elapsed)
-  fmt.Printf("Time taken to sort buckets: %s\n", sort_elapsed)
-  fmt.Println()
-  fmt.Printf("Total time for sample_sort: %s\n", total_elapsed)
+  fmt.Printf("Time taken to count: %s\n", bucketcount_elapsed)
 }
 
 // Partition strategy

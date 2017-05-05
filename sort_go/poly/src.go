@@ -8,6 +8,7 @@ import (
 
 type ParamStruct struct {
   n, threads, rounds int
+  n_buckets, oversample_stride, n_countblocks int
 }
 
 func read_cmdline_input(args []string) (int, int, int) {
@@ -25,10 +26,19 @@ func read_cmdline_input_struct(args []string) ParamStruct {
     fmt.Printf("Usage: %s <n> <threads> <rounds\n", args[0])
     os.Exit(1);
   }
+
+  n := string_to_int(args[1])
+  threads := string_to_int(args[2])
+  rounds := string_to_int(args[3])
+
   return ParamStruct{
-    string_to_int(args[1]),
-    string_to_int(args[2]),
-    string_to_int(args[3])}
+    n,
+    threads,
+    rounds,
+    threads * 2, // # of buckets
+    4,
+    threads, // # of countblocks
+  }
 }
 
 func main() {
@@ -62,6 +72,10 @@ func main() {
   elapsed_generate := time.Since(time_generate)
   fmt.Printf("Generating input: %s\n", elapsed_generate)
 
+  for _,x := range(input) {
+    x.Print()
+  }
+
 // Sort #rounds times
   fmt.Println("\n===== Sorting begins =====")
 
@@ -71,8 +85,8 @@ func main() {
     // This is where our sort function should be called from!
     time_sort := time.Now()
     // sequential_sort_copy(input, output)
-    // parallel_sample_sort(input, output, ps)
-    old_sample_sort(input, output, ps)
+    parallel_sample_sort(input, output, ps)
+    // old_sample_sort(input, output, ps)
     elapsed_sort := time.Since(time_sort)
 
     // Do some simple book-keeping
