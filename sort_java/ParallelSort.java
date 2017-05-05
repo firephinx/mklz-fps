@@ -19,12 +19,12 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    private int getBucket(Item[] buckets, Item item, int numProcessors) {
+    private int getBucket(Item[] buckets, Item item, int numWork) {
       int lo = 0;
-      int hi = numProcessors-2;
+      int hi = numWork-2;
 
-      if (item.compareTo(buckets[numProcessors-2]) > 0) {
-        return (numProcessors-1);
+      if (item.compareTo(buckets[numWork-2]) > 0) {
+        return (numWork-1);
       } else {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
@@ -37,13 +37,13 @@ public class ParallelSort
       }
     }
 
-    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<List<Item>>> bucketLists, int numProcessors, int size, int id) {
-      int numCalculate = size/numProcessors;
-      int maxIdx = (id == (numProcessors-1)) ? size : (id+1)*numCalculate;
+    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<List<Item>>> bucketLists, int numWork, int size, int id) {
+      int numCalculate = size/numWork;
+      int maxIdx = (id == (numWork-1)) ? size : (id+1)*numCalculate;
 
       for (int i = id * numCalculate; i < maxIdx; i += 1)
       {
-        int bucket = getBucket(buckets, array[i], numProcessors);
+        int bucket = getBucket(buckets, array[i], numWork);
         bucketLists.get(id).get(bucket).add(array[i]);
       }
       done = 1;
@@ -57,8 +57,8 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    public consolidateBucketsCallable(List<List<List<Item>>> bucketLists, List<List<Item>> consolidatedBucketLists, int numProcessors, int id) {
-      for (int i = 0; i < numProcessors; i += 1) {
+    public consolidateBucketsCallable(List<List<List<Item>>> bucketLists, List<List<Item>> consolidatedBucketLists, int numWork, int id) {
+      for (int i = 0; i < numWork; i += 1) {
         consolidatedBucketLists.get(id).addAll(bucketLists.get(i).get(id));
       }
       done = 1;
@@ -72,7 +72,7 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    public threadSortCallable(List<List<Item>> consolidatedBucketLists, Item[] array, int numProcessors, int id) {
+    public threadSortCallable(List<List<Item>> consolidatedBucketLists, Item[] array, int numWork, int id) {
       int size = consolidatedBucketLists.get(id).size();
       int start = 0;
 
@@ -98,12 +98,13 @@ public class ParallelSort
 
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
-    int oversample_rate = 1000;
+    int numWork = numProcessors * 100;
+    int oversample_rate = 100;
 
     Random rand = new Random();
-    Item[] samples = new Item[numProcessors*oversample_rate];
+    Item[] samples = new Item[numWork*oversample_rate];
 
-    for(int i = 0; i < numProcessors * oversample_rate; i += 1)
+    for(int i = 0; i < numWork * oversample_rate; i += 1)
     {
       int n = rand.nextInt(size);
       samples[i] = array[n];
@@ -111,9 +112,9 @@ public class ParallelSort
     
     Arrays.parallelSort(samples);
 
-    Item[] buckets = new Item[numProcessors-1];
+    Item[] buckets = new Item[numWork-1];
 
-    for(int i = 1; i < numProcessors; i += 1)
+    for(int i = 1; i < numWork; i += 1)
     {
       buckets[i-1] = samples[oversample_rate*i];
       //System.out.println("Bucket " + i + ": " + buckets[i-1].getHash());
@@ -123,23 +124,23 @@ public class ParallelSort
     Set<Future<Integer>> set = new HashSet<Future<Integer>>();
     List<List<List<Item>>> bucketLists = new ArrayList<List<List<Item>>>();
 
-    for (int i = 0; i < numProcessors; i += 1) {
+    for (int i = 0; i < numWork; i += 1) {
       List<List<Item>> bucketList = new ArrayList<List<Item>>();
-      for (int j = 0; j < numProcessors; j += 1) {
+      for (int j = 0; j < numWork; j += 1) {
         bucketList.add(new ArrayList<Item>());
       }
       bucketLists.add(bucketList);
     }
 
-    for (int i = 0; i < numProcessors; i += 1)
+    for (int i = 0; i < numWork; i += 1)
     {
-      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, numProcessors, size, i);
+      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, numWork, size, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
 
     int sum = 0;
-    while(sum < numProcessors){
+    while(sum < numWork){
       sum = 0;
       for (Future<Integer> future : set) {
         try{
@@ -155,19 +156,19 @@ public class ParallelSort
 
     List<List<Item>> consolidatedBucketLists = new ArrayList<List<Item>>();
 
-    for (int i = 0; i < numProcessors; i += 1) {
+    for (int i = 0; i < numWork; i += 1) {
       List<Item> bucketList = new ArrayList<Item>();
       consolidatedBucketLists.add(bucketList);
     }
 
-    for (int i = 0; i < numProcessors; i += 1)
+    for (int i = 0; i < numWork; i += 1)
     {
-      Callable<Integer> callable = new consolidateBucketsCallable(bucketLists, consolidatedBucketLists, numProcessors, i);
+      Callable<Integer> callable = new consolidateBucketsCallable(bucketLists, consolidatedBucketLists, numWork, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
 
-    while(sum < numProcessors){
+    while(sum < numWork){
       sum = 0;
       for (Future<Integer> future : set) {
         try{
@@ -183,16 +184,16 @@ public class ParallelSort
 
     Item[] newArray = new Item[size];  
 
-    for (int i = 0; i < numProcessors; i += 1)
+    for (int i = 0; i < numWork; i += 1)
     {
-      Callable<Integer> callable = new threadSortCallable(consolidatedBucketLists, newArray, numProcessors, i);
+      Callable<Integer> callable = new threadSortCallable(consolidatedBucketLists, newArray, numWork, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
 
     executor.shutdown();
 
-    while(sum < numProcessors){
+    while(sum < numWork){
       sum = 0;
       for (Future<Integer> future : set) {
         try{

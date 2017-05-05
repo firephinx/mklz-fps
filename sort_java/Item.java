@@ -58,21 +58,22 @@ public class Item implements Comparable<Item> {
 
 	public static Item[] getItems(int size) {
 		int numProcessors = Runtime.getRuntime().availableProcessors();
+		int numWork = numProcessors * 100;
 		//System.out.println("numProcessors = " + numProcessors);
 		ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
 		Item[] items = new Item[size];
 		Set<Future<Integer>> set = new HashSet<Future<Integer>>();
     
-		for (int i = 0; i < numProcessors; i += 1)
+		for (int i = 0; i < numWork; i += 1)
 	  {
-	    Callable<Integer> callable = new getItemCallable(items, numProcessors, size, i);
+	    Callable<Integer> callable = new getItemCallable(items, numWork, size, i);
 	    Future<Integer> future = executor.submit(callable);
 	    set.add(future);
 	  }
 	  executor.shutdown();
 
 	  int sum = 0;
-	  while(sum < numProcessors){
+	  while(sum < numWork){
 	  	sum = 0;
 	  	for (Future<Integer> future : set) {
 	  		try{
