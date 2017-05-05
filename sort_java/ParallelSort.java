@@ -232,9 +232,6 @@ public class ParallelSort
       if(args[0].equals("o")) {
         version = 1;
       }
-      else if (args[0].equals("a")) {
-        version = 2;
-      }
     }
 
     //Create the variables for timing
@@ -262,55 +259,22 @@ public class ParallelSort
 
       for(int run = 0; run <= numRuns; run += 1)
       {
+        Item[] sortedItems;
         if (version == 1) {
           start_sort = System.nanoTime();
-          Item[] sortedItems = Arrays.copyOf(items, items.length);
+          sortedItems = Arrays.copyOf(items, size);
           Arrays.parallelSort(sortedItems);
           end_sort = System.nanoTime();
         } else {
           start_sort = System.nanoTime();
-          Item[] sortedItems = sort(items);
+          sortedItems = sort(items);
           end_sort = System.nanoTime();
         } 
-        end_check = System.nanoTime();
-
-        //Output performance results
-        if(run > 0) {
-          duration_sort = (end_sort - start_sort) / 1E9;
-          duration_check = (end_check - start_check) / 1E9;
-          System.out.println("Sort Duration: " + duration_sort);
-          System.out.println("Check Duration: " + duration_check);
-        }
-      }
-    } else if(version == 2){
-      start_generation = System.nanoTime();
-      // Storing items into a 2D array
-      double[][] items = new double[size*2][2];
-
-      for(int i = 0; i < size; i+= 1) {
-        items[i][0] = generateReal(i);
-        items[i][1] = (double) i;
-      }
-      end_generation = System.nanoTime();
-
-      duration_generation = (end_generation - start_generation) / 1E9;
-      System.out.println("Generation Duration: " + duration_generation);
-
-      for(int run = 0; run <= numRuns; run += 1)
-      {
-        start_sort = System.nanoTime();
-        double[][] sortedItems = new double[size*2][2];
-        for(int i = 0; i < size; i += 1) {
-          sortedItems[i][0] = items[i][0];
-          sortedItems[i][1] = items[i][1];
-        }
-        Arrays.parallelSort(sortedItems, (double[] s1, double[] s2) -> Double.compare(s1[0],s2[0]));
-        end_sort = System.nanoTime();
 
         start_check = System.nanoTime();
         for(int i = 1; i < size; i++){
-          if(sortedItems[i][0] < sortedItems[i-1][0]) {
-            System.out.println("Failed Correctness" + sortedItems[i-1][0] + " is before " + sortedItems[i][0]);
+          if(sortedItems[i].compareTo(sortedItems[i-1]) < 0) {
+            System.out.println("Failed Correctness" + sortedItems[i-1].getHash() + " is before " + sortedItems[i].getHash());
           }
         }
         end_check = System.nanoTime();
