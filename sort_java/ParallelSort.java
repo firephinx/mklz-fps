@@ -5,6 +5,9 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.*;
 import java.util.concurrent.*;
+import java.lang.reflect.Array;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 
 public class ParallelSort
@@ -208,6 +211,146 @@ public class ParallelSort
     
   }
 
+  public static class mergeSortCallable
+        implements Callable {
+    private int done;
+
+    public mergeSortCallable(Item[] array, Item[] newArray, int numPartitions, int size, int id) {
+      int numCalculate = 4096;
+      int startIdx = id*numCalculate;
+      int maxIdx = (id == (numPartitions-1)) ? size : (id+1)*numCalculate;
+      int tempSize = maxIdx - startIdx;
+
+      Item[] tempArray = new Item[tempSize];
+      System.arraycopy(array, startIdx, tempArray, 0, tempSize);
+
+      Arrays.sort(tempArray);
+
+      System.arraycopy(tempArray, 0, newArray, startIdx, tempSize);
+      
+      done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
+  public static <T extends Comparable<? super T>> void MergeSortForkJoin(T[] a) {
+    @SuppressWarnings("unchecked")
+    T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+    ForkJoinPool forkJoinPool = new ForkJoinPool(numProcessors);
+    forkJoinPool.invoke(new MergeSortTask<T>(a, helper, 0, a.length-1));
+  }
+
+  private static class MergeSortTask<T extends Comparable<? super T>> extends RecursiveAction{
+    private static final long serialVersionUID = -749935388568367268L;
+    private final T[] a;
+    private final T[] helper;
+    private final int lo;
+    private final int hi;
+    
+    public MergeSortTask(T[] a, T[] helper, int lo, int hi){
+      this.a = a;
+      this.helper = helper;
+      this.lo = lo;
+      this.hi = hi;
+    }
+
+    @Override
+    protected void compute() {
+      if (lo>=hi) return;
+      int mid = lo + (hi-lo)/2;
+      /*if(hi - lo < 4096) {
+        Arrays.sort(this.a, this.lo, this.hi);
+      } else {*/
+      MergeSortTask<T> left = new MergeSortTask<>(a, helper, lo, mid);
+      MergeSortTask<T> right = new MergeSortTask<>(a, helper, mid+1, hi);
+      invokeAll(left, right);
+      merge(this.a, this.helper, this.lo, mid, this.hi);
+      //} 
+    }
+    private void merge(T[] a, T[] helper, int lo, int mid, int hi){
+      for (int i=lo;i<=hi;i++){
+        helper[i]=a[i];
+      }
+      int i=lo,j=mid+1;
+      for(int k=lo;k<=hi;k++){
+        if (i>mid){
+          a[k]=helper[j++];
+        }else if (j>hi){
+          a[k]=helper[i++];
+        }else if(isLess(helper[i], helper[j])){
+          a[k]=helper[i++];
+        }else{
+          a[k]=helper[j++];
+        }
+      }
+    }
+    private boolean isLess(T a, T b) {
+      return a.compareTo(b) < 0;
+    }
+  }
+
+  public static Item[] mergesort(Item[] array)
+  {
+
+    int size = array.length;
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+
+    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
+
+    int numPartitions = size/4096;
+    Set<Future<Integer>> set = new HashSet<Future<Integer>>();
+
+    Item[] newArray = new Item[size];
+
+    for(int i = 0; i < numPartitions; i += 1) {
+      Callable<Integer> callable = new mergeSortCallable(array, newArray, numPartitions, size, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }
+
+    int sum = 0;
+    while(sum < numPartitions){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }
+/*
+    sum = 0;
+    set.clear();
+
+    for (int i = 0; i < numPartitions; i += 1)
+    {
+      Callable<Integer> callable = new mergeCallable(newArray, numPartitions, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }*/
+
+    executor.shutdown();
+
+    /*while(sum < numPartitions){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }*/
+
+
+    return newArray;
+    
+  }
+
   public static int hash(int i)
   {
     long v = ((long) i) * 3935559000370003845L + 2691343689449507681L;
@@ -235,6 +378,9 @@ public class ParallelSort
       }
       if(args[0].equals("s")) {
         version = 2;
+      }
+      if(args[0].equals("m")) {
+        version = 3;
       }
     }
 
@@ -272,6 +418,11 @@ public class ParallelSort
         start_sort = System.nanoTime();
         sortedItems = Arrays.copyOf(items, size);
         Arrays.sort(sortedItems);
+        end_sort = System.nanoTime();
+      } else if (version == 3) {
+        start_sort = System.nanoTime();
+        sortedItems = Arrays.copyOf(items, size);
+        MergeSortForkJoin(sortedItems);
         end_sort = System.nanoTime();
       } else {
         start_sort = System.nanoTime();
