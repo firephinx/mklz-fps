@@ -4,6 +4,7 @@ import (
   "os"
   "fmt"
   "time"
+  "runtime/trace"
 )
 
 type ParamStruct struct {
@@ -42,6 +43,20 @@ func read_cmdline_input_struct(args []string) ParamStruct {
 }
 
 func main() {
+// Boilerplate to enable go trace tool
+  f, err := os.Create("trace.out")
+  if err != nil {
+    panic(err)
+  }
+  defer f.Close()
+
+  err = trace.Start(f)
+  if err != nil {
+    panic(err)
+  }
+  defer trace.Stop()
+
+
 // Read cmdline input
   ps := read_cmdline_input_struct(os.Args)  
   n, threads, rounds := ps.n, ps.threads, ps.rounds
