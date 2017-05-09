@@ -18,16 +18,20 @@ func count_II(in ElementSlice, bucket_walls ElementSlice, ch chan count_struct_I
   // The local per-bucket counts
   counts := make([]int, len(bucket_walls) + 1)
   
+  // Copy
+  local_walls :=make(ElementSlice, len(bucket_walls))
+  copy(local_walls, bucket_walls)
+
   // Which buckets the elements belong to
   which_bucket := make([]int, n)
 
   for i := 0; i<n;i++ {
     low := 0
-    high := len(bucket_walls)
+    high := len(local_walls)
 
     for high - low > 1 {
       mid := low + (high - low)/2
-      if (&bucket_walls[mid]).Less(&in[i]) {
+      if (&local_walls[mid]).Less(&in[i]) {
         low = mid
       } else {
         high = mid
@@ -35,7 +39,7 @@ func count_II(in ElementSlice, bucket_walls ElementSlice, ch chan count_struct_I
     }
     bidx := low
 
-    if bidx == len(bucket_walls) + 1 {
+    if bidx == len(local_walls) + 1 {
       fmt.Println("Err")
     }
     which_bucket[i] = bidx
