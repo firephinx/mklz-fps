@@ -261,14 +261,10 @@ public class ParallelSort
     protected void compute() {
       if (lo>=hi) return;
       int mid = lo + (hi-lo)/2;
-      /*if(hi - lo < 4096) {
-        Arrays.sort(this.a, this.lo, this.hi);
-      } else {*/
       MergeSortTask<T> left = new MergeSortTask<>(a, helper, lo, mid);
       MergeSortTask<T> right = new MergeSortTask<>(a, helper, mid+1, hi);
       invokeAll(left, right);
       merge(this.a, this.helper, this.lo, mid, this.hi);
-      //} 
     }
     private void merge(T[] a, T[] helper, int lo, int mid, int hi){
       for (int i=lo;i<=hi;i++){
