@@ -5,6 +5,7 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.*;
 import java.lang.reflect.Array;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
@@ -40,29 +41,19 @@ public class ParallelSort
       }
     }
 
-    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<List<Item>>> bucketLists, int numWork, int size, int id) {
-      int numCalculate = size/numWork;
-      int maxIdx = (id == (numWork-1)) ? size : (id+1)*numCalculate;
+    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<Item>> bucketLists, List<ReentrantLock> locks, int numProcessors, int numWork, int size, int id) {
+      int numCalculate = size/numProcessors;
+      int maxIdx = (id == (numProcessors-1)) ? size : (id+1)*numCalculate;
 
       for (int i = id * numCalculate; i < maxIdx; i += 1)
       {
         int bucket = getBucket(buckets, array[i], numWork);
-        bucketLists.get(id).get(bucket).add(array[i]);
-      }
-      done = 1;
-    }
-    public Integer call() {
-      return done;
-    }
-  }
-
-  public static class consolidateBucketsCallable
-        implements Callable {
-    private int done;
-
-    public consolidateBucketsCallable(List<List<List<Item>>> bucketLists, List<List<Item>> consolidatedBucketLists, int numWork, int id) {
-      for (int i = 0; i < numWork; i += 1) {
-        consolidatedBucketLists.get(id).addAll(bucketLists.get(i).get(id));
+        locks.get(bucket).lock();
+        try {
+          bucketLists.get(bucket).add(array[i]);
+        } finally {
+          locks.get(bucket).unlock();
+        }
       }
       done = 1;
     }
@@ -75,21 +66,23 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    public threadSortCallable(List<List<Item>> consolidatedBucketLists, Item[] array, int numWork, int id) {
-      int size = consolidatedBucketLists.get(id).size();
+    public threadSortCallable(List<List<Item>> bucketLists, Item[] array, int numWork, int id) {
+      int size = bucketLists.get(id).size();
+      //System.out.println("Bucket " + id + " size: " + size);
       int start = 0;
 
       for (int i = 0; i < id; i += 1) {
-        start += consolidatedBucketLists.get(i).size();
+        start += bucketLists.get(i).size();
       }
 
-      Collections.sort(consolidatedBucketLists.get(id));
+      //Collections.sort(bucketLists.get(id));
+      //System.arraycopy(bucketLists.get(id).toArray(), 0, array, start, size);
 
-      //Item[] newArray = .toArray(new Item[size]);
+      Item[] newArray = bucketLists.get(id).toArray(new Item[size]);
 
-      //Arrays.sort(newArray);
+      Arrays.sort(newArray);
 
-      System.arraycopy(consolidatedBucketLists.get(id).toArray(), 0, array, start, size);
+      System.arraycopy(newArray, 0, array, start, size);
 
       done = 1;
     }
@@ -104,7 +97,7 @@ public class ParallelSort
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
     int numWork = numProcessors * 30;
-    int oversample_rate = 100;
+    int oversample_rate = 50;
 
     Random rand = new Random();
     ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
@@ -142,24 +135,24 @@ public class ParallelSort
     System.out.println("Making Buckets Duration: " + duration_making_buckets);
 
     double start_bucket_lists = System.nanoTime();
-    List<List<List<Item>>> bucketLists = new ArrayList<List<List<Item>>>();
+    List<List<Item>> bucketLists = new ArrayList<List<Item>>();
+    List<ReentrantLock> locks = new ArrayList<ReentrantLock>();
 
     for (int i = 0; i < numWork; i += 1) {
-      List<List<Item>> bucketList = new ArrayList<List<Item>>();
-      for (int j = 0; j < numWork; j += 1) {
-        bucketList.add(new ArrayList<Item>());
-      }
+      List<Item> bucketList = new ArrayList<Item>();
+      ReentrantLock lock = new ReentrantLock();
       bucketLists.add(bucketList);
+      locks.add(lock);
     }
 
-    for (int i = 0; i < numWork; i += 1)
+    for (int i = 0; i < numProcessors; i += 1)
     {
-      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, numWork, size, i);
+      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, locks, numProcessors, numWork, size, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
 
-    while(sum < numWork){
+    while(sum < numProcessors){
       sum = 0;
       for (Future<Integer> future : set) {
         try{
@@ -177,50 +170,15 @@ public class ParallelSort
     sum = 0;
     set.clear();
 
-    double start_consol_bucket_lists = System.nanoTime();
-    List<List<Item>> consolidatedBucketLists = new ArrayList<List<Item>>();
-
-    for (int i = 0; i < numWork; i += 1) {
-      List<Item> bucketList = new ArrayList<Item>();
-      consolidatedBucketLists.add(bucketList);
-    }
-
-    for (int i = 0; i < numWork; i += 1)
-    {
-      Callable<Integer> callable = new consolidateBucketsCallable(bucketLists, consolidatedBucketLists, numWork, i);
-      Future<Integer> future = executor.submit(callable);
-      set.add(future);
-    }
-
-    while(sum < numWork){
-      sum = 0;
-      for (Future<Integer> future : set) {
-        try{
-          sum += future.get();
-        } catch (Exception e) {
-          break;
-        }
-      }
-    }
-
-    double end_consol_bucket_lists = System.nanoTime();
-    double duration_consol_bucket_lists = (end_consol_bucket_lists - start_consol_bucket_lists) / 1E9;
-    System.out.println("Consolidating Bucket Lists Duration: " + duration_consol_bucket_lists);
-
-    sum = 0;
-    set.clear();
-
     double start_sort_buckets = System.nanoTime();
     Item[] newArray = new Item[size];  
 
     for (int i = 0; i < numWork; i += 1)
     {
-      Callable<Integer> callable = new threadSortCallable(consolidatedBucketLists, newArray, numWork, i);
+      Callable<Integer> callable = new threadSortCallable(bucketLists, newArray, numWork, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
-
-    executor.shutdown();
 
     while(sum < numWork){
       sum = 0;
@@ -233,9 +191,11 @@ public class ParallelSort
       }
     }
 
+    executor.shutdown();
+
     double end_sort_buckets = System.nanoTime();
     double duration_sort_buckets = (end_sort_buckets - start_sort_buckets) / 1E9;
-    System.out.println("Sorting Buckets Duration: " + duration_sort_buckets);
+    System.out.println("Sorting Bucket Lists Duration: " + duration_sort_buckets);
 
     return newArray;
     
