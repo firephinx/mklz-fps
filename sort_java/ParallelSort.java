@@ -83,11 +83,13 @@ public class ParallelSort
         start += consolidatedBucketLists.get(i).size();
       }
 
-      Item[] newArray = consolidatedBucketLists.get(id).toArray(new Item[size]);
+      Collections.sort(consolidatedBucketLists.get(id));
 
-      Arrays.sort(newArray);
+      //Item[] newArray = .toArray(new Item[size]);
 
-      System.arraycopy(newArray, 0, array, start, size);
+      //Arrays.sort(newArray);
+
+      System.arraycopy(consolidatedBucketLists.get(id).toArray(), 0, array, start, size);
 
       done = 1;
     }
@@ -105,6 +107,11 @@ public class ParallelSort
     int oversample_rate = 100;
 
     Random rand = new Random();
+    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
+    Set<Future<Integer>> set = new HashSet<Future<Integer>>();
+    int sum = 0;
+
+    double start_sampling = System.nanoTime();
     Item[] samples = new Item[numWork*oversample_rate];
 
     for(int i = 0; i < numWork * oversample_rate; i += 1)
@@ -112,9 +119,17 @@ public class ParallelSort
       int n = rand.nextInt(size);
       samples[i] = array[n];
     }
+    double end_sampling = System.nanoTime();
+    double duration_sampling = (end_sampling - start_sampling) / 1E9;
+    System.out.println("Sampling Duration: " + duration_sampling);
     
+    double start_sort_samples = System.nanoTime();
     Arrays.parallelSort(samples);
+    double end_sort_samples = System.nanoTime();
+    double duration_sort_samples = (end_sort_samples - start_sort_samples) / 1E9;
+    System.out.println("Sort Samples Duration: " + duration_sort_samples);
 
+    double start_making_buckets = System.nanoTime();
     Item[] buckets = new Item[numWork-1];
 
     for(int i = 1; i < numWork; i += 1)
@@ -122,9 +137,11 @@ public class ParallelSort
       buckets[i-1] = samples[oversample_rate*i];
       //System.out.println("Bucket " + i + ": " + buckets[i-1].getHash());
     }
+    double end_making_buckets = System.nanoTime();
+    double duration_making_buckets = (end_making_buckets - start_making_buckets) / 1E9;
+    System.out.println("Making Buckets Duration: " + duration_making_buckets);
 
-    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
-    Set<Future<Integer>> set = new HashSet<Future<Integer>>();
+    double start_bucket_lists = System.nanoTime();
     List<List<List<Item>>> bucketLists = new ArrayList<List<List<Item>>>();
 
     for (int i = 0; i < numWork; i += 1) {
@@ -142,7 +159,6 @@ public class ParallelSort
       set.add(future);
     }
 
-    int sum = 0;
     while(sum < numWork){
       sum = 0;
       for (Future<Integer> future : set) {
@@ -154,9 +170,14 @@ public class ParallelSort
       }
     }
 
+    double end_bucket_lists = System.nanoTime();
+    double duration_bucket_lists = (end_bucket_lists - start_bucket_lists) / 1E9;
+    System.out.println("Bucket Lists Duration: " + duration_bucket_lists);
+
     sum = 0;
     set.clear();
 
+    double start_consol_bucket_lists = System.nanoTime();
     List<List<Item>> consolidatedBucketLists = new ArrayList<List<Item>>();
 
     for (int i = 0; i < numWork; i += 1) {
@@ -182,9 +203,14 @@ public class ParallelSort
       }
     }
 
+    double end_consol_bucket_lists = System.nanoTime();
+    double duration_consol_bucket_lists = (end_consol_bucket_lists - start_consol_bucket_lists) / 1E9;
+    System.out.println("Consolidating Bucket Lists Duration: " + duration_consol_bucket_lists);
+
     sum = 0;
     set.clear();
 
+    double start_sort_buckets = System.nanoTime();
     Item[] newArray = new Item[size];  
 
     for (int i = 0; i < numWork; i += 1)
@@ -206,6 +232,10 @@ public class ParallelSort
         }
       }
     }
+
+    double end_sort_buckets = System.nanoTime();
+    double duration_sort_buckets = (end_sort_buckets - start_sort_buckets) / 1E9;
+    System.out.println("Sorting Buckets Duration: " + duration_sort_buckets);
 
     return newArray;
     
