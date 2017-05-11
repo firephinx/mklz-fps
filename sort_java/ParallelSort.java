@@ -211,30 +211,6 @@ public class ParallelSort
     
   }
 
-  public static class mergeSortCallable
-        implements Callable {
-    private int done;
-
-    public mergeSortCallable(Item[] array, Item[] newArray, int numPartitions, int size, int id) {
-      int numCalculate = 4096;
-      int startIdx = id*numCalculate;
-      int maxIdx = (id == (numPartitions-1)) ? size : (id+1)*numCalculate;
-      int tempSize = maxIdx - startIdx;
-
-      Item[] tempArray = new Item[tempSize];
-      System.arraycopy(array, startIdx, tempArray, 0, tempSize);
-
-      Arrays.sort(tempArray);
-
-      System.arraycopy(tempArray, 0, newArray, startIdx, tempSize);
-      
-      done = 1;
-    }
-    public Integer call() {
-      return done;
-    }
-  }
-
   public static <T extends Comparable<? super T>> void MergeSortForkJoin(T[] a) {
     @SuppressWarnings("unchecked")
     T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
@@ -245,6 +221,7 @@ public class ParallelSort
 
   private static class MergeSortTask<T extends Comparable<? super T>> extends RecursiveAction{
     private static final long serialVersionUID = -749935388568367268L;
+    private static final int granularity = 8192;
     private final T[] a;
     private final T[] helper;
     private final int lo;
@@ -261,11 +238,16 @@ public class ParallelSort
     protected void compute() {
       if (lo>=hi) return;
       int mid = lo + (hi-lo)/2;
+      if(hi - lo < granularity){
+        Arrays.sort(a, lo, hi+1);
+        return;
+      }
       MergeSortTask<T> left = new MergeSortTask<>(a, helper, lo, mid);
       MergeSortTask<T> right = new MergeSortTask<>(a, helper, mid+1, hi);
       invokeAll(left, right);
       merge(this.a, this.helper, this.lo, mid, this.hi);
     }
+
     private void merge(T[] a, T[] helper, int lo, int mid, int hi){
       for (int i=lo;i<=hi;i++){
         helper[i]=a[i];
@@ -283,68 +265,10 @@ public class ParallelSort
         }
       }
     }
+
     private boolean isLess(T a, T b) {
       return a.compareTo(b) < 0;
     }
-  }
-
-  public static Item[] mergesort(Item[] array)
-  {
-
-    int size = array.length;
-    int numProcessors = Runtime.getRuntime().availableProcessors();
-
-    ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
-
-    int numPartitions = size/4096;
-    Set<Future<Integer>> set = new HashSet<Future<Integer>>();
-
-    Item[] newArray = new Item[size];
-
-    for(int i = 0; i < numPartitions; i += 1) {
-      Callable<Integer> callable = new mergeSortCallable(array, newArray, numPartitions, size, i);
-      Future<Integer> future = executor.submit(callable);
-      set.add(future);
-    }
-
-    int sum = 0;
-    while(sum < numPartitions){
-      sum = 0;
-      for (Future<Integer> future : set) {
-        try{
-          sum += future.get();
-        } catch (Exception e) {
-          break;
-        }
-      }
-    }
-/*
-    sum = 0;
-    set.clear();
-
-    for (int i = 0; i < numPartitions; i += 1)
-    {
-      Callable<Integer> callable = new mergeCallable(newArray, numPartitions, i);
-      Future<Integer> future = executor.submit(callable);
-      set.add(future);
-    }*/
-
-    executor.shutdown();
-
-    /*while(sum < numPartitions){
-      sum = 0;
-      for (Future<Integer> future : set) {
-        try{
-          sum += future.get();
-        } catch (Exception e) {
-          break;
-        }
-      }
-    }*/
-
-
-    return newArray;
-    
   }
 
   public static int hash(int i)

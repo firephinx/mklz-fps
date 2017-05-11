@@ -39,8 +39,20 @@ struct IncGenerator {
     double operator() () { return current_++; }
 };
 
-void parallel_sort(){
-  
+__device__ void sample_sort(RandomAccessIterator1   keys_first,
+                              RandomAccessIterator1   keys_last,
+                              RandomAccessIterator2   values_first,
+                              StrictWeakOrdering      comp) {
+  for
+
+}
+
+__device__ void merge_sort(RandomAccessIterator1   keys_first,
+                              RandomAccessIterator1   keys_last,
+                              RandomAccessIterator2   values_first,
+                              StrictWeakOrdering      comp) {
+  for
+
 }
 
 int main(void)
