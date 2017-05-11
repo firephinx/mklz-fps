@@ -17,4 +17,4 @@ done
 echo size=$N
 echo threads=$PROCS
 echo rounds=$ROUNDS
-numactl -i all ./sort_go $N $PROCS $ROUNDS
+numactl -i all ./sort_go -v -n $N -t $PROCS -r $ROUNDS -i
