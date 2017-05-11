@@ -221,7 +221,7 @@ public class ParallelSort
 
   private static class MergeSortTask<T extends Comparable<? super T>> extends RecursiveAction{
     private static final long serialVersionUID = -749935388568367268L;
-    private static final int granularity = 8192;
+    private static final int granularity = 4096;
     private final T[] a;
     private final T[] helper;
     private final int lo;
