@@ -2,6 +2,7 @@ package main
 
 import (
   "sort"
+  "time"
   // "fmt"
 )
 func (s ElementSlice) Less (i, j int) bool {
@@ -17,9 +18,19 @@ func (s ElementSlice) Swap(i, j int) {
 }
 
 // A function suitable to be used as a goroutine
-func sequential_sort(seq ElementSlice, done chan bool) {
+// func sequential_sort(seq ElementSlice, done chan bool) {
+//   sort.Sort(seq)
+//   done <- true
+// }
+
+func sequential_sort(seq ElementSlice, info_channel chan seq_sort_info) {
+  var info seq_sort_info
+  info.n_elems = len(seq)
+
+  time_begin := time.Now()
   sort.Sort(seq)
-  done <- true
+  info.total_duration = time.Since(time_begin) 
+  info_channel <- info
 }
 
 func sequential_sort_copy(input, output ElementSlice) {
@@ -29,31 +40,28 @@ func sequential_sort_copy(input, output ElementSlice) {
   sort.Sort(output)
 }
 
-func sequential_sort_by_index(seq ElementSlice, done chan bool) {
+
+
+// func sequential_sort_by_index(seq ElementSlice, done chan bool) {
+func sequential_sort_by_index(seq ElementSlice, info_channel chan seq_sort_info) {
+  var info seq_sort_info
+  info.n_elems = len(seq)
+
   // The list to be sorted
+  time_begin := time.Now()
+
   n := int32(len(seq))
   idx := make([]int32, n)
   for i:=int32(0);i<n;i++ {
     idx[i] = i
   }
 
-  // for i:=int32(0);i<n;i++ {
-  //   fmt.Printf("%v: ", i)
-  //   seq[i].Print()
-  // }
-
   // Sort indices by their elements
   sort.Slice(idx, func(i, j int) bool { return (&seq[idx[i]]).Less(&seq[idx[j]]) })
-  // sort.Slice(idx, func(i, j int) bool { return seq[i].x > seq[j].x })
-  // sort.Slice(idx, func(i, j int) bool { return i > j })
 
-  // fmt.Println("Sorted")
+  info.sort_duration = time.Since(time_begin)
 
-  // for _,x := range(idx) {
-  //   fmt.Printf("%v ", x)
-  //   seq[x].Print()
-  // }
-  // fmt.Println()
+  time_shuffle := time.Now()
 
   // First attempt: naive
 
@@ -85,5 +93,9 @@ func sequential_sort_by_index(seq ElementSlice, done chan bool) {
     }
   }
 
-  done <-true
+  info.shuffle_duration = time.Since(time_shuffle)
+
+  info.total_duration = time.Since(time_begin)
+  // done <-true
+  info_channel <- info
 }
