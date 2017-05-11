@@ -193,17 +193,19 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
   sort_elapsed := time.Since(time_begin_sort)
   total_elapsed := time.Since(time_begin)
 
-  for _,info := range(info_slice) {
-        // fmt.Printf("Sorting %d elems by index:\n", info.n_elems)
-    // fmt.Printf("Sort indices: %s\n", info.sort_duration)
-    // fmt.Printf("Shuffle elems: %s\n", info.shuffle_duration)
-    // fmt.Printf("Total: %s\n", info.total_duration)
+  if ps.print_seq_timing {
+    for _,info := range(info_slice) {
+          // fmt.Printf("Sorting %d elems by index:\n", info.n_elems)
+      // fmt.Printf("Sort indices: %s\n", info.sort_duration)
+      // fmt.Printf("Shuffle elems: %s\n", info.shuffle_duration)
+      // fmt.Printf("Total: %s\n", info.total_duration)
 
-    fmt.Printf("%d, %.5f, %.5f, %.5f\n", 
-      info.n_elems, 
-      info.sort_duration.Seconds(), 
-      info.shuffle_duration.Seconds(), 
-      info.total_duration.Seconds())
+      fmt.Printf("%d, %.5f, %.5f, %.5f\n", 
+        info.n_elems, 
+        info.sort_duration.Seconds(), 
+        info.shuffle_duration.Seconds(), 
+        info.total_duration.Seconds())
+    }
   }
 
   if ps.verbose {

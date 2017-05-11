@@ -16,6 +16,7 @@ type ParamStruct struct {
   enable_trace bool
   verbose bool
   verify_output bool
+  print_seq_timing bool
 }
 
 func read_flags() ParamStruct {
@@ -32,49 +33,14 @@ func read_flags() ParamStruct {
   flag.BoolVar(&ps.enable_trace, "trace", false, "Enable trace?")
   flag.BoolVar(&ps.verbose, "v", false, "Verbose?")
   flag.BoolVar(&ps.verify_output, "verify", false, "Verify output?")
-
+  flag.BoolVar(&ps.print_seq_timing, "print_seq", false, "Print sequential timing")
   flag.Parse()
 
   return ps
 }
 
-func read_cmdline_input(args []string) (int, int, int) {
-  const expected_args int = 3
-  if num_args := len(args) ; num_args != expected_args + 1 {
-    fmt.Printf("Usage: %s <n> <threads> <rounds\n", args[0])
-    os.Exit(1);
-  }
-  return string_to_int(args[1]), string_to_int(args[2]), string_to_int(args[3])
-}
-
-func read_cmdline_input_struct(args []string) ParamStruct {
-  const expected_args int = 3
-  if num_args := len(args) ; num_args != expected_args + 1 {
-    fmt.Printf("Usage: %s <n> <threads> <rounds\n", args[0])
-    os.Exit(1);
-  }
-
-  n := string_to_int(args[1])
-  threads := string_to_int(args[2])
-  rounds := string_to_int(args[3])
-
-  return ParamStruct{
-    n,
-    threads * 4,
-    rounds,
-    threads * 8, // # of buckets
-    4,
-    threads * 4, // # of countblocks
-    true, // sort by indices
-    false, // enable trace
-    true, // verbose
-    true, // verify output
-  }
-}
-
 func main() {
 // Read cmdline input
-  // ps := read_cmdline_input_struct(os.Args)  
   ps := read_flags()  
 
 // Boilerplate to enable go trace tool

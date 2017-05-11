@@ -1,10 +1,10 @@
 from csv import reader
 import matplotlib.pyplot as plt
 
-with open('../data/go/local/elems_10e7_r5.csv', 'r') as f_elems:
+with open('../data/go/aware/elems_n10e8_t576_r5.csv', 'r') as f_elems:
     data_elems = list(reader(f_elems))
 
-with open('../data/go/local/indices_10e7_r5.csv', 'r') as f_indices:
+with open('../data/go/aware/indices_n10e8_t576_r5.csv', 'r') as f_indices:
     data_indices = list(reader(f_indices))
 
 
