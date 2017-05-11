@@ -71,10 +71,10 @@ x_axis = elems_total.keys()
 plt.xlabel("number of elements")
 plt.ylabel("time taken to sort by element")
 
-plt.scatter(x_axis, elems_total.values(), color="red", label="Sorting by Element")
-plt.scatter(x_axis, indices_total.values(), color="blue", label="Sorting by Index")
-plt.scatter(x_axis, indices_sort.values(), color="yellow", label="Sorting the Indices")
-plt.scatter(x_axis, indices_shuffle.values(), color="green", label="Permuting the Elements")
+plt.scatter(x_axis, elems_total.values(), color="red", label="Sorting by Element", s=4)
+plt.scatter(x_axis, indices_total.values(), color="blue", label="Sorting by Index", s=4)
+plt.scatter(x_axis, indices_sort.values(), color="yellow", label="Sorting the Indices", s=4)
+plt.scatter(x_axis, indices_shuffle.values(), color="green", label="Permuting the Elements", s=4)
 
 plt.legend()
 
