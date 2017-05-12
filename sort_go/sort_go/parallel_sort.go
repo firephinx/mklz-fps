@@ -74,11 +74,13 @@ func partition(in, out ElementSlice, which_bucket []int, bucket_offsets []int, c
 func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
 
   // Read parameters defined via cmd-line
-  // threads := ps.threads
-  n_buckets := ps.n_buckets
+  threads := ps.threads
+  // n_buckets := ps.n_buckets
+  n_buckets := threads * 8
   oversample_stride := ps.oversample_stride
 
-  n_blocks := ps.n_countblocks
+  // n_blocks := ps.n_countblocks
+  n_blocks := threads * 4
 
   n := len(in)
 

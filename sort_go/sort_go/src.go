@@ -27,7 +27,7 @@ func read_flags() ParamStruct {
   flag.IntVar(&ps.threads, "t", default_threads * 4, "Number of threads")
   flag.IntVar(&ps.rounds, "r", 1, "How many rounds to run")
   flag.IntVar(&ps.n_buckets, "buckets", default_threads * 8, "Number of buckets")
-  flag.IntVar(&ps.oversample_stride, "oversample", 4, "Oversample stride")
+  flag.IntVar(&ps.oversample_stride, "oversample", 10, "Oversample stride")
   flag.IntVar(&ps.n_countblocks, "countblocks", default_threads * 4, "Number of countblocks")
   flag.BoolVar(&ps.sort_by_indices, "i", false, "Sort by indices?")
   flag.BoolVar(&ps.enable_trace, "trace", false, "Enable trace?")
