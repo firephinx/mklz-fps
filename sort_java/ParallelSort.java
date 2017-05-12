@@ -28,7 +28,6 @@ public class ParallelSort
   }
 
   private static class MergeSortTaskGranularity<T extends Comparable<? super T>> extends RecursiveAction{
-    private static final long serialVersionUID = -749935388568367268L;
     private static final int granularity = 4096;
     private final T[] a;
     private final T[] helper;
@@ -79,6 +78,8 @@ public class ParallelSort
     }
   }
 
+  // Merge Sort Fork Join taken from 
+  // https://github.com/bijukunjummen/algos/blob/master/src/main/java/org/bk/algo/sort/algo04/merge/MergeSortForkJoin.java
   public static <T extends Comparable<? super T>> void MergeSortForkJoin(T[] a) {
     @SuppressWarnings("unchecked")
     T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
