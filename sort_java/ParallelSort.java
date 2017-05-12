@@ -19,6 +19,121 @@ public class ParallelSort
     * @return The sorted array
     */
 
+  public static <T extends Comparable<? super T>> void MergeSortForkJoinGranularity(T[] a) {
+    @SuppressWarnings("unchecked")
+    T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+    ForkJoinPool forkJoinPool = new ForkJoinPool(numProcessors);
+    forkJoinPool.invoke(new MergeSortTaskGranularity<T>(a, helper, 0, a.length-1));
+  }
+
+  private static class MergeSortTaskGranularity<T extends Comparable<? super T>> extends RecursiveAction{
+    private static final long serialVersionUID = -749935388568367268L;
+    private static final int granularity = 4096;
+    private final T[] a;
+    private final T[] helper;
+    private final int lo;
+    private final int hi;
+    
+    public MergeSortTaskGranularity(T[] a, T[] helper, int lo, int hi){
+      this.a = a;
+      this.helper = helper;
+      this.lo = lo;
+      this.hi = hi;
+    }
+
+    @Override
+    protected void compute() {
+      if (lo>=hi) return;
+      int mid = lo + (hi-lo)/2;
+      if(hi - lo < granularity){
+        Arrays.sort(a, lo, hi+1);
+        return;
+      }
+      MergeSortTaskGranularity<T> left = new MergeSortTaskGranularity<>(a, helper, lo, mid);
+      MergeSortTaskGranularity<T> right = new MergeSortTaskGranularity<>(a, helper, mid+1, hi);
+      invokeAll(left, right);
+      merge(this.a, this.helper, this.lo, mid, this.hi);
+    }
+
+    private void merge(T[] a, T[] helper, int lo, int mid, int hi){
+      for (int i=lo;i<=hi;i++){
+        helper[i]=a[i];
+      }
+      int i=lo,j=mid+1;
+      for(int k=lo;k<=hi;k++){
+        if (i>mid){
+          a[k]=helper[j++];
+        }else if (j>hi){
+          a[k]=helper[i++];
+        }else if(isLess(helper[i], helper[j])){
+          a[k]=helper[i++];
+        }else{
+          a[k]=helper[j++];
+        }
+      }
+    }
+
+    private boolean isLess(T a, T b) {
+      return a.compareTo(b) < 0;
+    }
+  }
+
+  public static <T extends Comparable<? super T>> void MergeSortForkJoin(T[] a) {
+    @SuppressWarnings("unchecked")
+    T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
+    int numProcessors = Runtime.getRuntime().availableProcessors();
+    ForkJoinPool forkJoinPool = new ForkJoinPool(numProcessors);
+    forkJoinPool.invoke(new MergeSortTask<T>(a, helper, 0, a.length-1));
+  }
+
+  private static class MergeSortTask<T extends Comparable<? super T>> extends RecursiveAction{
+    private static final long serialVersionUID = -749935388568367268L;
+    private final T[] a;
+    private final T[] helper;
+    private final int lo;
+    private final int hi;
+    
+    public MergeSortTask(T[] a, T[] helper, int lo, int hi){
+      this.a = a;
+      this.helper = helper;
+      this.lo = lo;
+      this.hi = hi;
+    }
+
+    @Override
+    protected void compute() {
+      if (lo>=hi) return;
+      int mid = lo + (hi-lo)/2;
+      MergeSortTask<T> left = new MergeSortTask<>(a, helper, lo, mid);
+      MergeSortTask<T> right = new MergeSortTask<>(a, helper, mid+1, hi);
+      invokeAll(left, right);
+      merge(this.a, this.helper, this.lo, mid, this.hi);
+    }
+
+    private void merge(T[] a, T[] helper, int lo, int mid, int hi){
+      for (int i=lo;i<=hi;i++){
+        helper[i]=a[i];
+      }
+      int i=lo,j=mid+1;
+      for(int k=lo;k<=hi;k++){
+        if (i>mid){
+          a[k]=helper[j++];
+        }else if (j>hi){
+          a[k]=helper[i++];
+        }else if(isLess(helper[i], helper[j])){
+          a[k]=helper[i++];
+        }else{
+          a[k]=helper[j++];
+        }
+      }
+    }
+
+    private boolean isLess(T a, T b) {
+      return a.compareTo(b) < 0;
+    }
+  }
+
   public static class sortBucketsCallable
         implements Callable {
     private int done;
@@ -76,9 +191,7 @@ public class ParallelSort
       }
 
       Item[] newArray = bucketLists.get(id).toArray(new Item[size]);
-
       Arrays.parallelSort(newArray);
-
       System.arraycopy(newArray, 0, array, start, size);
 
       done = 1;
@@ -198,84 +311,6 @@ public class ParallelSort
     
   }
 
-  public static <T extends Comparable<? super T>> void MergeSortForkJoin(T[] a) {
-    @SuppressWarnings("unchecked")
-    T[] helper = (T[])Array.newInstance(a[0].getClass() , a.length);
-    int numProcessors = Runtime.getRuntime().availableProcessors();
-    ForkJoinPool forkJoinPool = new ForkJoinPool(numProcessors);
-    forkJoinPool.invoke(new MergeSortTask<T>(a, helper, 0, a.length-1));
-  }
-
-  private static class MergeSortTask<T extends Comparable<? super T>> extends RecursiveAction{
-    private static final long serialVersionUID = -749935388568367268L;
-    private static final int granularity = 4096;
-    private final T[] a;
-    private final T[] helper;
-    private final int lo;
-    private final int hi;
-    
-    public MergeSortTask(T[] a, T[] helper, int lo, int hi){
-      this.a = a;
-      this.helper = helper;
-      this.lo = lo;
-      this.hi = hi;
-    }
-
-    @Override
-    protected void compute() {
-      if (lo>=hi) return;
-      int mid = lo + (hi-lo)/2;
-      if(hi - lo < granularity){
-        Arrays.sort(a, lo, hi+1);
-        return;
-      }
-      MergeSortTask<T> left = new MergeSortTask<>(a, helper, lo, mid);
-      MergeSortTask<T> right = new MergeSortTask<>(a, helper, mid+1, hi);
-      invokeAll(left, right);
-      merge(this.a, this.helper, this.lo, mid, this.hi);
-    }
-
-    private void merge(T[] a, T[] helper, int lo, int mid, int hi){
-      for (int i=lo;i<=hi;i++){
-        helper[i]=a[i];
-      }
-      int i=lo,j=mid+1;
-      for(int k=lo;k<=hi;k++){
-        if (i>mid){
-          a[k]=helper[j++];
-        }else if (j>hi){
-          a[k]=helper[i++];
-        }else if(isLess(helper[i], helper[j])){
-          a[k]=helper[i++];
-        }else{
-          a[k]=helper[j++];
-        }
-      }
-    }
-
-    private boolean isLess(T a, T b) {
-      return a.compareTo(b) < 0;
-    }
-  }
-
-  public static int hash(int i)
-  {
-    long v = ((long) i) * 3935559000370003845L + 2691343689449507681L;
-    v = v ^ (v >> 21);
-    v = v ^ (v << 37);
-    v = v ^ (v >> 4);
-    v = v * 4768777513237032717L;
-    v = v ^ (v << 20);
-    v = v ^ (v >> 41);
-    v = v ^ (v <<  5);
-    return (int) (v & ((((long) 1) << 31) - 1));
-  }
-
- // generates a pseudorandom double precision real from an integer
- public static double generateReal(int i) {
-    return (double) hash(i);
- }
-
   public static void main(String args[])
   {
     int version = 0;
@@ -288,6 +323,9 @@ public class ParallelSort
       }
       if(args[0].equals("m")) {
         version = 3;
+      }
+      if(args[0].equals("g")) {
+        version = 4;
       }
     }
 
@@ -330,6 +368,11 @@ public class ParallelSort
         start_sort = System.nanoTime();
         sortedItems = Arrays.copyOf(items, size);
         MergeSortForkJoin(sortedItems);
+        end_sort = System.nanoTime();
+      } else if (version == 4) {
+        start_sort = System.nanoTime();
+        sortedItems = Arrays.copyOf(items, size);
+        MergeSortForkJoinGranularity(sortedItems);
         end_sort = System.nanoTime();
       } else {
         start_sort = System.nanoTime();
