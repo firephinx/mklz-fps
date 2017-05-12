@@ -37,7 +37,10 @@ Axtmann, M., & Sanders, P. (2017). Robust Massively Parallel Sorting. In 2017 Pr
 
 Matthew wrote all of the Go code while Kevin worked on the Java and CUDA sorting programs. In addition, Matthew made the presentation while Kevin worked on the final report.
 
-# Checkpoint
+----
+****
+
+# Project Checkpoint
 
 ## Summary
 
@@ -89,9 +92,6 @@ The platform has been already been determined for us by the rules of the contest
 
 We will be creating a C++ version with CUDA and/or ISPC as stated in our stretch goals because sorting is a bandwidth-intensive problem, and GPUs have much higher bandwidth currently compared to CPUs.
 
-----
-****
-
 ## Project Checkpoint 
 
 ### Progress
@@ -115,7 +115,7 @@ We don't foresee any issues with completing the project. The only problem might 
 ----
 ****
 
-# Proposal
+# Project Proposal
 
 ## Summary
 
