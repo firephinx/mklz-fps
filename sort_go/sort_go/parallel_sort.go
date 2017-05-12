@@ -76,11 +76,11 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
   // Read parameters defined via cmd-line
   threads := ps.threads
   // n_buckets := ps.n_buckets
-  n_buckets := threads * 8
+  n_buckets := threads
   oversample_stride := ps.oversample_stride
 
   // n_blocks := ps.n_countblocks
-  n_blocks := threads * 4
+  n_blocks := threads
 
   n := len(in)
 
