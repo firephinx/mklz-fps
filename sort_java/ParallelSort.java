@@ -75,12 +75,9 @@ public class ParallelSort
         start += bucketLists.get(i).size();
       }
 
-      //Collections.sort(bucketLists.get(id));
-      //System.arraycopy(bucketLists.get(id).toArray(), 0, array, start, size);
-
       Item[] newArray = bucketLists.get(id).toArray(new Item[size]);
 
-      Arrays.sort(newArray);
+      Arrays.parallelSort(newArray);
 
       System.arraycopy(newArray, 0, array, start, size);
 
@@ -96,8 +93,8 @@ public class ParallelSort
 
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
-    int numWork = numProcessors * 30;
-    int oversample_rate = 50;
+    int numWork = numProcessors;
+    int oversample_rate = 500;
 
     Random rand = new Random();
     ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
