@@ -1,0 +1,15 @@
+Instructions:
+
+Compilation:
+	javac Item.java ParallelSort.java
+
+How to run:
+	cd ..
+	java sort_java.ParallelSort
+
+Optional arguments:
+	l - sample sort lock implementation
+	m - merge sort implementation
+	g - merge sort with granularity implementation
+	p - java parallelsort implementation
+	s - java sequential sort implementation

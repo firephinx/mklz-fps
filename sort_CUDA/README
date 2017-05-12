@@ -1,0 +1,7 @@
+Instructions:
+
+Compilation:
+	nvcc thrust_sort.cu
+
+How to run:
+	./a.out
