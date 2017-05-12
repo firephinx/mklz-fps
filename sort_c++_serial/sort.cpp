@@ -4,12 +4,12 @@
 #include <stdint.h>
 using namespace std;
 
-#define N 10000000
+#define N 100000000
 
 struct elem {
   double x;
   double y;
-} input[N], output[N];
+};
 
 // from numerical recipes
 uint64_t hash64(uint64_t u )
@@ -32,6 +32,10 @@ bool cmp(const elem &a, const elem& b){
 }
 
 int main(){
+  elem *input, *output;
+  input = (elem*) malloc(sizeof(elem) * N);
+  output = (elem*) malloc(sizeof(elem)*N);
+
   for(int i=0;i<N;i++) {
     input[i].x = (double) hash64((uint64_t) i);
     input[i].y = (double) i;
