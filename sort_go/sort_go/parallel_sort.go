@@ -14,6 +14,7 @@ type count_struct_II struct {
 
 type seq_sort_info struct {
   n_elems int
+  init_duration time.Duration
   sort_duration time.Duration
   shuffle_duration time.Duration
   total_duration time.Duration
@@ -200,8 +201,9 @@ func parallel_sample_sort(in, out ElementSlice, ps ParamStruct) {
       // fmt.Printf("Shuffle elems: %s\n", info.shuffle_duration)
       // fmt.Printf("Total: %s\n", info.total_duration)
 
-      fmt.Printf("%d, %.5f, %.5f, %.5f\n", 
+      fmt.Printf("%d, %5f, %.5f, %.5f, %.5f\n", 
         info.n_elems, 
+        info.init_duration.Seconds(), 
         info.sort_duration.Seconds(), 
         info.shuffle_duration.Seconds(), 
         info.total_duration.Seconds())

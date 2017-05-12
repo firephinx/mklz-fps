@@ -56,10 +56,15 @@ func sequential_sort_by_index(seq ElementSlice, info_channel chan seq_sort_info)
     idx[i] = i
   }
 
+  info.init_duration = time.Since(time_begin)
+
+  time_sort := time.Now()
+
+
   // Sort indices by their elements
   sort.Slice(idx, func(i, j int) bool { return (&seq[idx[i]]).Less(&seq[idx[j]]) })
 
-  info.sort_duration = time.Since(time_begin)
+  info.sort_duration = time.Since(time_sort)
 
   time_shuffle := time.Now()
 
