@@ -5,7 +5,6 @@ import java.util.Comparator;
 import java.util.Random;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.*;
 import java.lang.reflect.Array;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.RecursiveAction;
@@ -23,12 +22,12 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    private int getBucket(Item[] buckets, Item item, int numWork) {
+    private int getBucket(Item[] buckets, Item item, int numProcessors) {
       int lo = 0;
-      int hi = numWork-2;
+      int hi = numProcessors-2;
 
-      if (item.compareTo(buckets[numWork-2]) > 0) {
-        return (numWork-1);
+      if (item.compareTo(buckets[numProcessors-2]) > 0) {
+        return (numProcessors-1);
       } else {
         while (lo <= hi) {
             // Key is in a[lo..hi] or not present.
@@ -41,20 +40,42 @@ public class ParallelSort
       }
     }
 
-    public sortBucketsCallable(Item[] buckets, Item[] array, List<List<Item>> bucketLists, List<ReentrantLock> locks, int numProcessors, int numWork, int size, int id) {
+    public sortBucketsCallable(Item[] buckets, Item[] array, List<int[]> bucketLists, int numProcessors, int size, int id) {
       int numCalculate = size/numProcessors;
       int maxIdx = (id == (numProcessors-1)) ? size : (id+1)*numCalculate;
 
       for (int i = id * numCalculate; i < maxIdx; i += 1)
       {
-        int bucket = getBucket(buckets, array[i], numWork);
-        locks.get(bucket).lock();
-        try {
-          bucketLists.get(bucket).add(array[i]);
-        } finally {
-          locks.get(bucket).unlock();
+        int bucket = getBucket(buckets, array[i], numProcessors);
+        bucketLists.get(bucket)[i] = 1;
+      }
+      done = 1;
+    }
+    public Integer call() {
+      return done;
+    }
+  }
+
+  public static class transferDataCallable
+        implements Callable {
+    private int done;
+
+    public transferDataCallable(List<int[]> bucketLists, List<int[]> prefixSumResults, int[] bucketSizes, int[] bucketSizeOffsets, Item[] array, Item[] newArray, int id) {
+      int size = bucketSizes[id];
+      int start = bucketSizeOffsets[id];
+      int num = 0;
+      //System.out.println("Bucket " + id + " size: " + size);
+      
+      for(int j = 0; j < size; j += 1) {
+        if(bucketLists.get(id)[j] == 1) {
+          newArray[start+num] = array[j];
+          num += 1;
+          if(num == size) {
+            break;
+          }
         }
       }
+
       done = 1;
     }
     public Integer call() {
@@ -66,20 +87,11 @@ public class ParallelSort
         implements Callable {
     private int done;
 
-    public threadSortCallable(List<List<Item>> bucketLists, Item[] array, int numWork, int id) {
-      int size = bucketLists.get(id).size();
+    public threadSortCallable(Item[] newArray, int[] bucketSizeOffsets, int id) {
+      //int size = bucketSizeOffsets[id+1] - bucketSizeOffsets[id];
       //System.out.println("Bucket " + id + " size: " + size);
-      int start = 0;
 
-      for (int i = 0; i < id; i += 1) {
-        start += bucketLists.get(i).size();
-      }
-
-      Item[] newArray = bucketLists.get(id).toArray(new Item[size]);
-
-      Arrays.parallelSort(newArray);
-
-      System.arraycopy(newArray, 0, array, start, size);
+      Arrays.parallelSort(newArray, bucketSizeOffsets[id], bucketSizeOffsets[id+1]);
 
       done = 1;
     }
@@ -93,8 +105,7 @@ public class ParallelSort
 
     int size = array.length;
     int numProcessors = Runtime.getRuntime().availableProcessors();
-    int numWork = numProcessors;
-    int oversample_rate = 500;
+    int oversample_rate = 250;
 
     Random rand = new Random();
     ExecutorService executor = Executors.newFixedThreadPool(numProcessors);
@@ -102,9 +113,9 @@ public class ParallelSort
     int sum = 0;
 
     double start_sampling = System.nanoTime();
-    Item[] samples = new Item[numWork*oversample_rate];
+    Item[] samples = new Item[numProcessors*oversample_rate];
 
-    for(int i = 0; i < numWork * oversample_rate; i += 1)
+    for(int i = 0; i < numProcessors * oversample_rate; i += 1)
     {
       int n = rand.nextInt(size);
       samples[i] = array[n];
@@ -120,9 +131,9 @@ public class ParallelSort
     System.out.println("Sort Samples Duration: " + duration_sort_samples);
 
     double start_making_buckets = System.nanoTime();
-    Item[] buckets = new Item[numWork-1];
+    Item[] buckets = new Item[numProcessors-1];
 
-    for(int i = 1; i < numWork; i += 1)
+    for(int i = 1; i < numProcessors; i += 1)
     {
       buckets[i-1] = samples[oversample_rate*i];
       //System.out.println("Bucket " + i + ": " + buckets[i-1].getHash());
@@ -132,19 +143,16 @@ public class ParallelSort
     System.out.println("Making Buckets Duration: " + duration_making_buckets);
 
     double start_bucket_lists = System.nanoTime();
-    List<List<Item>> bucketLists = new ArrayList<List<Item>>();
-    List<ReentrantLock> locks = new ArrayList<ReentrantLock>();
+    List<int[]> bucketLists = new ArrayList<int[]>();
 
-    for (int i = 0; i < numWork; i += 1) {
-      List<Item> bucketList = new ArrayList<Item>();
-      ReentrantLock lock = new ReentrantLock();
+    for (int i = 0; i < numProcessors; i += 1) {
+      int[] bucketList = new int[size];
       bucketLists.add(bucketList);
-      locks.add(lock);
     }
 
     for (int i = 0; i < numProcessors; i += 1)
     {
-      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, locks, numProcessors, numWork, size, i);
+      Callable<Integer> callable = new sortBucketsCallable(buckets, array, bucketLists, numProcessors, size, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
@@ -164,20 +172,66 @@ public class ParallelSort
     double duration_bucket_lists = (end_bucket_lists - start_bucket_lists) / 1E9;
     System.out.println("Bucket Lists Duration: " + duration_bucket_lists);
 
+    double start_prefix_sums = System.nanoTime();
+    List<int[]> prefixSumResults = new ArrayList<int[]>();
+    int[] bucketSizes = new int[numProcessors];
+
+    for (int i = 0; i < numProcessors; i += 1) {
+      int[] bucketListCopy = Arrays.copyOf(bucketLists.get(i),size);
+      Arrays.parallelPrefix(bucketListCopy, ( x, y ) -> x + y );
+      prefixSumResults.add(bucketListCopy);
+      bucketSizes[i] = bucketListCopy[size-1];
+    }
+
+    int[] bucketSizeOffsets = Arrays.copyOf(bucketSizes,numProcessors+1);
+    Arrays.parallelPrefix (bucketSizeOffsets, ( x, y ) -> x + y );
+
+    double end_prefix_sums = System.nanoTime();
+    double duration_prefix_sums = (end_prefix_sums - start_prefix_sums) / 1E9;
+    System.out.println("Prefix Sum Duration: " + duration_prefix_sums);
+
     sum = 0;
     set.clear();
 
-    double start_sort_buckets = System.nanoTime();
+    double start_transfer_data = System.nanoTime();
     Item[] newArray = new Item[size];  
 
-    for (int i = 0; i < numWork; i += 1)
+    for (int i = 0; i < numProcessors; i += 1)
     {
-      Callable<Integer> callable = new threadSortCallable(bucketLists, newArray, numWork, i);
+      Callable<Integer> callable = new transferDataCallable(bucketLists, prefixSumResults, bucketSizes, bucketSizeOffsets, array, newArray, i);
       Future<Integer> future = executor.submit(callable);
       set.add(future);
     }
 
-    while(sum < numWork){
+    while(sum < numProcessors){
+      sum = 0;
+      for (Future<Integer> future : set) {
+        try{
+          sum += future.get();
+        } catch (Exception e) {
+          break;
+        }
+      }
+    }
+
+    double end_transfer_data = System.nanoTime();
+    double duration_transfer_data = (end_transfer_data - start_transfer_data) / 1E9;
+    System.out.println("Prefix Sum Duration: " + duration_transfer_data);
+
+
+    sum = 0;
+    set.clear();
+
+    double start_sort_buckets = System.nanoTime(); 
+
+    for (int i = 0; i < numProcessors; i += 1)
+    {
+      Callable<Integer> callable = new threadSortCallable(newArray, bucketSizeOffsets, i);
+      Future<Integer> future = executor.submit(callable);
+      set.add(future);
+    }
+
+    while(sum < numProcessors){
       sum = 0;
       for (Future<Integer> future : set) {
         try{
