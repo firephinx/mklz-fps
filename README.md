@@ -90,6 +90,7 @@ The platform has been already been determined for us by the rules of the contest
 We will be creating a C++ version with CUDA and/or ISPC as stated in our stretch goals because sorting is a bandwidth-intensive problem, and GPUs have much higher bandwidth currently compared to CPUs.
 
 ----
+****
 
 ## Project Checkpoint 
 
@@ -107,11 +108,12 @@ We don't foresee any issues with completing the project. The only problem might 
 | --------------- | ------------- | ------------ |
 | Apr 10 - Apr 16 | Review literature on parallel sorting algorithms <br/> Get the provided C++ code to compile and run on GHC machines and then analyse the performance of the provided C++ code <br/> Choose at least 2 garbage-collected languages and get them working on the GHC machines (set up the environment so we are able to compile and run parallel code) | Completed 4/14 <br/> Completed 4/25 <br/> Completed 4/14 |
 | Apr 17 - Apr 23 | Implement first attempt at parallel sorting in the garbage-collected languages of our choice <br/> Analyse initial results from the first attempt and choose a language to focus on for our main contest submission | Completed 4/23 <br/> Completed 4/25 |
-| Apr 24 - Apr 30 | Do write-up for project checkpoint (due Apr 25) <br/> Focus on optimizing the parallel sort in the language of our choice (Matthew - Go, Kevin - Java) <br/> Submit our progress so far to Guy Blelloch’s team in order to request access to Aware machine | Completed 4/25 <br/> In Progress (Both) <br/> Planned (Both) |
-| Apr 31 - May 5  | Test and optimize on the Aware machine <br/> Submit to the 210 sorting competition (due May 4) | Planned (Both) <br/> Planned (Matthew)|
-| May 6 - May 12  | Write C++ sorting code with CUDA and/or ISPC (Not part of 210 competition) <br/> Prepare for final presentation | Planned (Kevin) <br/> Planned (Both)|
+| Apr 24 - Apr 30 | Do write-up for project checkpoint (due Apr 25) <br/> Focus on optimizing the parallel sort in the language of our choice (Matthew - Go, Kevin - Java) <br/> Submit our progress so far to Guy Blelloch’s team in order to request access to Aware machine | Completed 4/25 <br/> Completed 5/4 <br/> Completed 5/2 |
+| Apr 31 - May 5  | Test and optimize on the Aware machine <br/> Submit to the 210 sorting competition (due May 4) | Completed 5/4 <br/> Completed 5/4 |
+| May 6 - May 12  | Write C++ sorting code with CUDA (Not part of 210 competition) <br/> Prepare for final presentation | In Progress (Kevin) <br/> Completed 5/11 |
 
 ----
+****
 
 # Proposal
 
