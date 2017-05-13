@@ -1,0 +1,23 @@
+This is a sample sort implemented in Go.
+
+Please compile it with the Go 1.8 tools.
+
+Some highlights are:
+
+1) Unlike the provided C++ sample sort, this version obtains bucket counts 
+  by binary searching on the sampled dividers, thus reducing memory writes.
+
+2) To reduce memory writes during the intra-bucket sorting, we sort
+  indices instead of copying elements about. Only after the element indices
+  have been sorted do we permute the actual elements to their right positions.
+
+This implementation is polymorphic; users may define their own custom elements
+in "elem.go" and set the types in "types.go" to reflect their chosen element
+type.
+
+Outside elem.go, types.go and verify.go, the code does not "peek" at the values
+of the elements being sorted, only using the "Less" function to compare them
+and doing "blind copying" of elements.
+
+
+Matthew Lee (May 4, 11.51pm)
