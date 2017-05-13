@@ -17,7 +17,7 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 We decided to implement parallel sample sort in two languages for the competition: Go and Java. 
 
-![Sample Sort Diagram](https://github.com/firephinx/mklz-fps/blob/master/images/sampleSortDiagram.PNG "Sample Sort Diagram")
+![Sample Sort Diagram](https://github.com/firephinx/mklz-fps/blob/master/images/sampleSortDiagram.PNG)
 
 Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core being in charge of a certain partition of the original input. Finally, we sort each bucket in parallel to complete the sort.  
 
