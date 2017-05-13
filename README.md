@@ -15,13 +15,19 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 ## Approach
 
-We decided to implement parallel sample sort in two languages for the competition: Go and Java. 
+Just to reiterate, the challenge was to have the fastest comparison-based sorting algorithm in a garbage-collected language on a 72-core machine with an input of 100,000,000 key value pairs.
 
-Sample sort is a divide-and-conquer based sorting algorithm that can be thought of as a generalization of quicksort. In sample sort, the input array is first partitioned into buckets such that elements of earlier buckets should come before elements of later buckets in the final ordering. The task that remains is to sort the elements within each bucket, a highly parallelizable problem.
+![Sorting Competition Slide](/images/competitionSlide.PNG)
+
+After reviewing literature around the fastest parallel sorting algorithms, we decided to implement parallel sample sort in two garbage-collected languages for the competition: Go and Java. 
+
+Sample sort is a divide-and-conquer based sorting algorithm that can be thought of as a generalization of quicksort. In sample sort, the input array is first partitioned into buckets such that elements of earlier buckets should come before elements of later buckets in the final ordering, with each core in charge of distributing a certain partition of the original input. The task that remains is to sort the elements within each bucket, a highly parallelizable problem.
+
+This simple algorithm can be implemented in many ways, which we outline below:
 
 ![Sample Sort Diagram](/images/sampleSortDiagram.PNG)
 
-### Partitioning Stage
+### Bucket-counting Stage
 
 In this stage, elements are sampled from the input to act as "splitters", which define the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion. 
 
@@ -31,9 +37,19 @@ The difference in the two approaches lies in how the bucket-counts for each bloc
 
 The first approach - binary search - has the advantage of being O(n log k) per block, where k is the number of pivots and n is the number of elements in the block. Unless each block is really small, this is worse than the complexity of the second approach, which is O(n log n + k). Furthermore, the first approach is non-destructive with respect to the original input, eliminating the need for writes and saving memory bandwidth in the process. We chose to use the first approach for these two reasons.
 
+### Distribution stage
+
+* We first implemented the distribution into buckets using fine grained locking with each bucket having its own lock so that the bucket lists wouldn't run into concurrency issues when two threads add to the same bucket at the same time. We used this as a baseline in our Java program.
+* We then tried having each thread make separate lists for each bucket with the elements in its partition and once all the partitions were done, the lists were appended to each other to create the complete buckets, but this took a lot of bandwidth as well as memory.
+* Finally, we implemented the distribution into buckets using prefix sums to determine where the buckets start in the array as well as where each partition would start inserting its elements into the buckets. This ended up being much more efficient even though we had to iterate through the entire array twice (once to get the counts for the prefix sums and a second time to transfer the data into the proper positions).
+
+Additionally in Java, we tested different ways of representing the key value pairs. For example, we tried a 2D array, Java's MapEntry, and creating a new Object. We found that Java was fastest with Objects.
+
+We then experimented with sorting by indices instead of moving the elements around to see if the lower bandwidth could help improve our performance. However, in practice, sorting indices was significantly slower then sorting elements.
+
 ### Sorting Stage
 
-Once the elements have been partitioned into buckets, all that remains is to sort each bucket. Since each bucket is independent of the others, all buckets can be sorted simultaneously, in parallel. Within each bucket, the Go standard library's implementation of quicksort is used.
+Once the elements have been partitioned and distributed into buckets, all that remains is to sort each bucket. Since each bucket is independent of the others, all buckets can be sorted simultaneously, in parallel. Within each bucket, the Go standard library's implementation of quicksort is used.
 
 ### Parameter selection
 
@@ -41,22 +57,35 @@ Although a key feature of Go is lightweight threads, or "goroutines", that encou
 
 ## Results
 
+Performance was measured by the wall-clock time of sorting 100,000,000 key value pairs that were of type double.
+
+The good news is that we got close to linear speedup: the performance of our algorithm is 88% of the ideal speedup.
+
 ![Go Speedup Diagram](/images/gospeedup.PNG)
+
+However, we feel that a true challenge - a proper benchmark - is to see how our algorithm stacks up against the best algorithms we could find, in any language. On the same machine, the baseline C++ written by the 210 team was still 2.6x faster than our Go implementation. In addition, we tested the CUDA sort from the Thrust library on a GPU, a GTX1080, which was able to sort 100 million elements even faster, taking advantage of the higher bandwidth available on the GPU. It should be noted that the timing data for the GPU also includes the time taken to transfer the data to and from the GPU.
 
 ![Go Comparison to Baseline Diagram](/images/goComparisonBaseline.PNG)
 
+On the plus side, however, our Go implementation is 3.6 times faster than the Java library’s built-in parallel sort. Of course, it is much faster than the serial implementations in C++, Go and Java. In particular, it is 63 times faster than the serial implementation in Go.
+
 ![Go Comparison to Others Diagram](/images/goComparisonOthers.PNG)
+
+Now, it’s not always sunny in Pittsburgh, which is where the storm comes rolling in. We also tried implementing a similar algorithm in Java. However, we ended up with a vastly different result than Go with our Sample Sort being twice as slow as Java’s built in ParallelSort. From our analysis of the timing, we spent the most time with determining the correct bucket for each element, which is strange because we implemented it with binary search, but perhaps Java’s JIT compiler is unable to optimize for it when each run finds different elements as splitters.
 
 ![Java Graphs Diagram](/images/javaGraphs.PNG)
 
 ## Anti-Optimizations
 
-The 
+And we discovered that the overhead of permuting the elements was minimal.
 
 ![Sorting by Index Diagram](/images/sortingByIndex.PNG)
 
 ![Permutation Diagram](/images/permutationGraph.PNG)
 
+## Conclusion
+
+Overall, we learned a lot about optimizing sort algorithms on a variety of machines in the two languages and figured out that it might not be as easy as we thought to beat a highly optimized built-in parallel algorithm with a private implementation of TimSort.
 
 ## References
 
@@ -110,11 +139,11 @@ We will need access to the Xeon Phi machines in addition to the four days’ wor
   * How much control the languages provide the programmer over the low-level performance-determining details.
 * Implement a highly optimized sorting algorithm on one chosen language. This would constitute our main submission to the sorting contest. (Go)
 * The concrete goal is to make it run faster than their SML and C++ solutions.
-* Implement a parallel sort in CUDA and/or ISPC.
 
 ### Hope to achieve
 * Highly optimize for more than one language (Java if time is on our side).
 * Implement an automated way of searching the parameter space (autotuning). This will allow us to make good use of the 4 days we have on the Aware machine.
+* Implement a parallel sort in CUDA and/or ISPC.
 
 ### Planned Demo
 * Performance comparison graphs between our optimized code and the baseline on different machines.
