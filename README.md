@@ -61,7 +61,7 @@ Now, it’s not always sunny in Pittsburgh, which is where the storm comes rolli
 
 ![Java Graphs Diagram](/images/javaGraphs.PNG)
 
-Overall, we learned a lot about optimizing sort algorithms on a variety of machines and figured that it might not always be a great idea to try and beat and highly optimized built-in parallel algorithm with a private implementation of TimSort.
+Overall, we learned a lot about optimizing sort algorithms on a variety of machines in the two languages and figured out that it might not be as easy as we thought to beat a highly optimized built-in parallel algorithm with a private implementation of TimSort.
 
 ## References
 
@@ -115,11 +115,11 @@ We will need access to the Xeon Phi machines in addition to the four days’ wor
   * How much control the languages provide the programmer over the low-level performance-determining details.
 * Implement a highly optimized sorting algorithm on one chosen language. This would constitute our main submission to the sorting contest. (Go)
 * The concrete goal is to make it run faster than their SML and C++ solutions.
-* Implement a parallel sort in CUDA and/or ISPC.
 
 ### Hope to achieve
 * Highly optimize for more than one language (Java if time is on our side).
 * Implement an automated way of searching the parameter space (autotuning). This will allow us to make good use of the 4 days we have on the Aware machine.
+* Implement a parallel sort in CUDA and/or ISPC.
 
 ### Planned Demo
 * Performance comparison graphs between our optimized code and the baseline on different machines.
