@@ -21,9 +21,19 @@ We decided to implement parallel sample sort in two languages for the competitio
 
 Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core being in charge of a certain partition of the original input. Finally, we sort each bucket in parallel to complete the sort.  
 
+![Sorting by Index Diagram](/images/sortingByIndex.PNG)
+
+![Permutation Diagram](/images/permutationGraph.PNG)
+
 ## Results
 
+![Go Speedup Diagram](/images/gospeedup.PNG)
 
+![Go Comparison to Baseline Diagram](/images/goComparisonBaseline.PNG)
+
+![Go Comparison to Others Diagram](/images/goComparisonOthers.PNG)
+
+![Java Graphs Diagram](/images/javaGraphs.PNG)
 
 ## References
 
