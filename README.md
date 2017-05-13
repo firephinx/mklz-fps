@@ -15,11 +15,23 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 ## Approach
 
-We decided to implement parallel sample sort in two languages for the competition: Go and Java. 
+Just to reiterate, the challenge was to have the fastest sorting algorithm in a garbage-collected language on a 72-core machine with an input of 100,000,000 key value pairs.
+
+![Sorting Competition Slide](/images/competitionSlide.PNG)
+
+After reviewing literature around the fastest parallel sorting algorithms, we decided to implement parallel sample sort in two garbage-collected languages for the competition: Go and Java. 
 
 ![Sample Sort Diagram](/images/sampleSortDiagram.PNG)
 
-Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core being in charge of a certain partition of the original input. Finally, we sort each bucket in parallel to complete the sort.  
+Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core in charge of distributing a certain partition of the original input. Finally, we can sort each bucket in parallel to complete the sort.
+
+This simple algorithm can be implemented in many ways, which we outline below:
+
+* We first implemented the distribution into buckets using fine grained locking with each bucket having its own lock so that the bucket lists wouldn't run into concurrency issues when two threads add to the same bucket at the same time. We used this as a baseline in our Java program.
+* We then tried having each thread make separate lists for each bucket with the elements in its partition and once all the partitions were done, the lists were appended to each other to create the complete buckets, but this took a lot of bandwidth as well as memory.
+* Finally, we implemented the distribution into buckets using prefix sums to determine where the buckets start in the array as well as where each partition would start inserting its elements into the buckets. This ended up being much more efficient even though we had to iterate through the entire array twice (once to get the counts for the prefix sums and a second time to transfer the data into the proper positions).
+
+We then experimented with sorting by indices instead of moving the elements around to see if the lower bandwidth could help improve our performance.
 
 ![Sorting by Index Diagram](/images/sortingByIndex.PNG)
 
@@ -45,7 +57,7 @@ Leischner, Nikolaj, Vitaly Osipov, and Peter Sanders. "GPU sample sort." Paralle
 
 ## List of Work by Each Student
 
-Matthew wrote all of the Go code while Kevin worked on the Java sorting and CUDA benchmarking programs. In addition, Matthew made the presentation while Kevin worked on the final report.
+Matthew wrote all of the Go code while Kevin worked on the Java sorting and CUDA benchmarking programs. In addition, Matthew made the presentation while Kevin worked on the final report. Overall, an even work distribution.
 
 ----
 ****
