@@ -47,7 +47,7 @@ Additionally in Java, we tested different ways of representing the key value pai
 
 We then experimented with sorting by indices instead of moving the elements around to see if the lower bandwidth could help improve our performance. However, in practice, sorting indices was significantly slower then sorting elements.
 
-### Sorting Stage
+### Intra-Bucket Sorting Stage
 
 Once the elements have been partitioned and distributed into buckets, all that remains is to sort each bucket. Since each bucket is independent of the others, all buckets can be sorted simultaneously, in parallel. Within each bucket, the Go standard library's implementation of quicksort is used.
 
@@ -63,7 +63,7 @@ The good news is that we got close to linear speedup: the performance of our alg
 
 ![Go Speedup Diagram](/images/gospeedup.PNG)
 
-However, we feel that a true challenge - a proper benchmark - is to see how our algorithm stacks up against the best algorithms we could find, in any language. On the same machine, the baseline C++ written by the 210 team was still 2.6x faster than our Go implementation. In addition, we tested the CUDA sort from the Thrust library on a GPU, a GTX1080, which was able to sort 100 million elements even faster, taking advantage of the higher bandwidth available on the GPU. It should be noted that the timing data for the GPU also includes the time taken to transfer the data to and from the GPU.
+However, we feel that a true challenge - a proper benchmark - is to see how our algorithm stacks up against the best algorithms we knew of, in any language. On the same machine, the baseline C++ written by the 210 team was still 2.6x faster than our Go implementation. In addition, we tested the CUDA sort from the Thrust library on a GPU, a GTX1080, which was able to sort 100 million elements even faster, taking advantage of the higher bandwidth available on the GPU. It should be noted that the timing data for the GPU also includes the time taken to transfer the data to and from the GPU.
 
 ![Go Comparison to Baseline Diagram](/images/goComparisonBaseline.PNG)
 
@@ -77,11 +77,21 @@ Now, it’s not always sunny in Pittsburgh, which is where the storm comes rolli
 
 ## Anti-Optimizations
 
-And we discovered that the overhead of permuting the elements was minimal.
+One "optimization" which we thought might work involves the amount of writes that occur during the intra-bucket sorting stage. Although the elements are structs consisting of two double-precision floats, only one of them, the key field, is used to determine the ordering of elements - the other value, the data field, is not involved in comparisons. Despite this, during sorting, both the key and the data fields are being copied and shuffled around in memory.
+
+We sought to reduce the amount of writes that occur during sorting by sorting *indices* instead of elements. To sort a bucket of length n, we created an array of 4-byte integers from 0 to n-1, and sorted this list of indices instead. (To determine the order between two indices, we compare the elements they represent). After sorting the indices, we permuted the array of elements in-place to put them in the right order.
+
+Since elements are 16 bytes in size, but indices are only 4 bytes in size, we thought that we would see significant speedup due to less memory bandwidth needed.
 
 ![Sorting by Index Diagram](/images/sortingByIndex.PNG)
 
+Unfortunately, this was counterproductive, leading to a roughly 1.25x slowdown in the sorting phase.
+
+Delving deeper, we measured the time taken to sort the indices separately from the time taken to permute the actual elements after the indices had been sorted. We discovered that the overhead of permuting the elements, as represented by the green points, was minimal. Sorting the indices alone - the yellow points - took up the bulk of the time. 
+
 ![Permutation Diagram](/images/permutationGraph.PNG)
+
+Upon further reflection, we realised that although we had eliminated the need to write elements while indices were being sorted, the fact that they still had to be read from memory in order to compare pairs of indices was preventing us from seeing any speed-up.
 
 ## Conclusion
 
