@@ -1,0 +1,9 @@
+This is my implementation of a straightforward sample sort in Go.
+
+It has been tested with the latest version (1.8) of the Go compiler.
+
+It currently performs about 3.6x as badly as the provided C++ sample sort on the unix5 machine.
+
+A "compile" script that simply runs "go build" inside the source directory is provided.
+
+A "run" script of the same form as the provided "run" script has also been provided.
