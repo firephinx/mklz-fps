@@ -15,7 +15,7 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 ## Approach
 
-Just to reiterate, the challenge was to have the fastest sorting algorithm in a garbage-collected language on a 72-core machine with an input of 100,000,000 key value pairs.
+Just to reiterate, the challenge was to have the fastest comparison-based sorting algorithm in a garbage-collected language on a 72-core machine with an input of 100,000,000 key value pairs.
 
 ![Sorting Competition Slide](/images/competitionSlide.PNG)
 
@@ -31,9 +31,13 @@ This simple algorithm can be implemented in many ways, which we outline below:
 * We then tried having each thread make separate lists for each bucket with the elements in its partition and once all the partitions were done, the lists were appended to each other to create the complete buckets, but this took a lot of bandwidth as well as memory.
 * Finally, we implemented the distribution into buckets using prefix sums to determine where the buckets start in the array as well as where each partition would start inserting its elements into the buckets. This ended up being much more efficient even though we had to iterate through the entire array twice (once to get the counts for the prefix sums and a second time to transfer the data into the proper positions).
 
-We then experimented with sorting by indices instead of moving the elements around to see if the lower bandwidth could help improve our performance.
+Additionally in Java, we tested different ways of representing the key value pairs. For example, we tried a 2D array, Java's MapEntry, and creating a new Object. We found that Java was fastest with Objects.
+
+We then experimented with sorting by indices instead of moving the elements around to see if the lower bandwidth could help improve our performance. However, in practice, sorting indices was significantly slower then sorting elements.
 
 ![Sorting by Index Diagram](/images/sortingByIndex.PNG)
+
+And we discovered that the overhead of permuting the elements was minimal.
 
 ![Permutation Diagram](/images/permutationGraph.PNG)
 
@@ -57,7 +61,7 @@ Now, it’s not always sunny in Pittsburgh, which is where the storm comes rolli
 
 ![Java Graphs Diagram](/images/javaGraphs.PNG)
 
-Overall, we learned that it might not be a good idea in the future to try optimizing the sort in a language where there is already a built-in parallel sorting algorithm.
+Overall, we learned a lot about optimizing sort algorithms on a variety of machines and figured that it might not always be a great idea to try and beat and highly optimized built-in parallel algorithm with a private implementation of TimSort.
 
 ## References
 
@@ -69,7 +73,7 @@ Leischner, Nikolaj, Vitaly Osipov, and Peter Sanders. "GPU sample sort." Paralle
 
 ## List of Work by Each Student
 
-Matthew wrote all of the Go code while Kevin worked on the Java sorting and CUDA benchmarking programs. In addition, Matthew made the presentation while Kevin worked on the final report. Overall, an even work distribution.
+Matthew wrote all of the Go code while Kevin worked on the Java sorting and CUDA benchmarking programs. In addition, Matthew made the presentation while Kevin worked on the final report.
 
 ----
 ****
