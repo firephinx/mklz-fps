@@ -39,13 +39,25 @@ We then experimented with sorting by indices instead of moving the elements arou
 
 ## Results
 
+Performance was measured by the wall-clock time of sorting 100,000,000 key value pairs that were of type double.
+
+The good news is that we got close to linear speedup: the performance of our algorithm is 88% of the ideal speedup.
+
 ![Go Speedup Diagram](/images/gospeedup.PNG)
+
+However, we feel that a true challenge is to see how our algorithm stacks up against the best algorithms we could find. On the same machine, the baseline C++ implementation given to us by the 210 team was still 2.6x faster than our Go implementation. In addition, we tested thrust's sort on a 1080, which was able to sort 100 million elements even faster because of higher bandwidth.
 
 ![Go Comparison to Baseline Diagram](/images/goComparisonBaseline.PNG)
 
+On the plus side, however, our Go implementation is 3.6 times faster than the Java library’s built-in parallel sort. Of course, it is much faster than the serial implementations in C++, Go and Java. In particular, it is 63 times faster than the serial implementation in Go.
+
 ![Go Comparison to Others Diagram](/images/goComparisonOthers.PNG)
 
+Now, it’s not always sunny in Pittsburgh, which is where the storm comes rolling in. We also tried implementing a similar algorithm in Java. However, we ended up with a vastly different result than Go with our Sample Sort being twice as slow as Java’s built in ParallelSort. From our analysis of the timing, we spent the most time with determining the correct bucket for each element, which is strange because we implemented it with binary search, but perhaps Java’s JIT compiler is unable to optimize for it when each run finds different elements as splitters.
+
 ![Java Graphs Diagram](/images/javaGraphs.PNG)
+
+Overall, we learned that it might not be a good idea in the future to try optimizing the sort in a language where there is already a built-in parallel sorting algorithm.
 
 ## References
 
