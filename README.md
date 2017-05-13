@@ -15,27 +15,27 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 ## Approach
 
-### Matthew
+We decided to implement parallel sample sort in two languages for the competition: Go and Java. 
 
+![Sample Sort Diagram](https://github.com/firephinx/mklz-fps/blob/master/images/sampleSortDiagram.PNG "Sample Sort Diagram")
 
-### Kevin
-
+Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core being in charge of a certain partition of the original input. Finally, we sort each bucket in parallel to complete the sort.  
 
 ## Results
 
-### Matthew
-
-
-### Kevin
 
 
 ## References
 
 Axtmann, M., & Sanders, P. (2017). Robust Massively Parallel Sorting. In 2017 Proceedings of the Ninteenth Workshop on Algorithm Engineering and Experiments (ALENEX) (pp. 83-97). Society for Industrial and Applied Mathematics.
 
+Bozidar, Darko, and Tomaz Dobravec. "Comparison of parallel sorting algorithms." arXiv preprint arXiv:1511.03404 (2015).
+
+Leischner, Nikolaj, Vitaly Osipov, and Peter Sanders. "GPU sample sort." Parallel & Distributed Processing (IPDPS), 2010 IEEE International Symposium on. IEEE, 2010.
+
 ## List of Work by Each Student
 
-Matthew wrote all of the Go code while Kevin worked on the Java and CUDA sorting programs. In addition, Matthew made the presentation while Kevin worked on the final report.
+Matthew wrote all of the Go code while Kevin worked on the Java sorting and CUDA benchmarking programs. In addition, Matthew made the presentation while Kevin worked on the final report.
 
 ----
 ****
@@ -96,7 +96,7 @@ We will be creating a C++ version with CUDA and/or ISPC as stated in our stretch
 
 ### Progress
 
-So far, Matt has implemented a parallel Sample Sort algorithm in Go that sorts 100 million pairs in 1.9 seconds. Kevin is still working on the parallel sorting algorithm in Java and has tested the performance of the built in parallel sort algorithm. We have analyzed the performance of their C++ code on the unix machines and have cemented our focus on Go as our main submission into the parallel sorting competition. We will be submitting our Go implementation soon to Guy Blelloch in order to unlock access to the Aware machine and begin testing both implementations on the Aware machines. We have also created a sample graph below with the Go implementation compared to the C++ implementation on unix5 to demonstrate our current performance.
+So far, Matt has implemented a parallel Sample Sort algorithm in Go that sorts 100 million pairs in 1.9 seconds. Kevin is still working on the parallel sorting algorithm in Java and has tested the performance of the built in parallel sort algorithm. We have analyzed the performance of their C++ code on the unix machines and have cemented our focus on Go as our main submission into the parallel sorting competition. We will be submitting our Go implementation soon to Guy Blelloch in order to unlock access to the Aware machine and begin testing both implementations on the Aware machines.
 
 ### Potential Issues
 
@@ -110,7 +110,7 @@ We don't foresee any issues with completing the project. The only problem might 
 | Apr 17 - Apr 23 | Implement first attempt at parallel sorting in the garbage-collected languages of our choice <br/> Analyse initial results from the first attempt and choose a language to focus on for our main contest submission | Completed 4/23 <br/> Completed 4/25 |
 | Apr 24 - Apr 30 | Do write-up for project checkpoint (due Apr 25) <br/> Focus on optimizing the parallel sort in the language of our choice (Matthew - Go, Kevin - Java) <br/> Submit our progress so far to Guy Blelloch’s team in order to request access to Aware machine | Completed 4/25 <br/> Completed 5/4 <br/> Completed 5/2 |
 | Apr 31 - May 5  | Test and optimize on the Aware machine <br/> Submit to the 210 sorting competition (due May 4) | Completed 5/4 <br/> Completed 5/4 |
-| May 6 - May 12  | Write C++ sorting code with CUDA (Not part of 210 competition) <br/> Prepare for final presentation | In Progress (Kevin) <br/> Completed 5/11 |
+| May 6 - May 12  | Write benchmarking code with CUDA thrust <br/> Prepare for final presentation | Completed 5/11 <br/> Completed 5/11 |
 
 ----
 ****
