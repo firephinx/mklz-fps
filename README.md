@@ -17,13 +17,27 @@ With sample sort, there are a few initial dependencies where the program needs t
 
 We decided to implement parallel sample sort in two languages for the competition: Go and Java. 
 
+Sample sort is a divide-and-conquer based sorting algorithm that can be thought of as a generalization of quicksort. In sample sort, the input array is first partitioned into buckets such that elements of earlier buckets should come before elements of later buckets in the final ordering. The task that remains is to sort the elements within each bucket, a highly parallelizable problem.
+
 ![Sample Sort Diagram](/images/sampleSortDiagram.PNG)
 
-Sample sort is a divide and conquer based sorting algorithm that first takes samples from the array to determine the splitters, which are used to determine the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion using the splitters, with each core being in charge of a certain partition of the original input. Finally, we sort each bucket in parallel to complete the sort.  
+### Partitioning Stage
 
-![Sorting by Index Diagram](/images/sortingByIndex.PNG)
+In this stage, elements are sampled from the input to act as "splitters", which define the boundaries between the buckets. Then we divide the input into the buckets in a parallel fashion. 
 
-![Permutation Diagram](/images/permutationGraph.PNG)
+There are two distinct approaches to performing this step. Both approaches begin by dividing the input into blocks, and assigning a thread to each block to count how many elements in that block belong in each bucket. After it is known how many elements from each block belong in each bucket, the offsets for each block within each bucket may be computed and the elements copied from the input sequence to their correct buckets in parallel.
+
+The difference in the two approaches lies in how the bucket-counts for each block are computed. The first approach iterates through each element in the block and binary-searches the list of pivots to determine which bucket the element belongs to. The second approach first sorts the elements in each block and then uses a procedure similar to the "merge" operation in mergesort to count how many elements lie between each pair of pivots.
+
+The first approach - binary search - has the advantage of being O(n log k) per block, where k is the number of pivots and n is the number of elements in the block. Unless each block is really small, this is worse than the complexity of the second approach, which is O(n log n + k). Furthermore, the first approach is non-destructive with respect to the original input, eliminating the need for writes and saving memory bandwidth in the process. We chose to use the first approach for these two reasons.
+
+### Sorting Stage
+
+Once the elements have been partitioned into buckets, all that remains is to sort each bucket. Since each bucket is independent of the others, all buckets can be sorted simultaneously, in parallel. Within each bucket, the Go standard library's implementation of quicksort is used.
+
+### Parameter selection
+
+Although a key feature of Go is lightweight threads, or "goroutines", that encourage application programmers to spawn many more threads than there are cores, we avoid this style in favour of a low thread-to-core ratio. Having a small number (~2-4) of threads per physical core is high enough that hyperthreading can be used to hide memory-access latency (a huge concern as sorting is bandwidth-bound), but not so high as to incur significant overhead.
 
 ## Results
 
@@ -34,6 +48,15 @@ Sample sort is a divide and conquer based sorting algorithm that first takes sam
 ![Go Comparison to Others Diagram](/images/goComparisonOthers.PNG)
 
 ![Java Graphs Diagram](/images/javaGraphs.PNG)
+
+## Anti-Optimizations
+
+The 
+
+![Sorting by Index Diagram](/images/sortingByIndex.PNG)
+
+![Permutation Diagram](/images/permutationGraph.PNG)
+
 
 ## References
 
